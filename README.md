@@ -14,37 +14,37 @@ It combines a **Flutter mobile app**, a **React web application**, and a **hardw
 University transportation can be unpredictable—late buses, unclear routes, and lack of real-time updates.  
 **UniRide** solves this problem by providing:
 
-- 📍 Real-time university bus tracking  
-- 🕒 Accurate travel timetables  
-- 🧑‍✈️ Driver & bus information for easy identification  
-- 🌐 Mobile + Web access for convenience  
+- Real-time university bus tracking  
+- Accurate travel timetables  
+- Driver & bus information for easy identification  
+- Mobile + Web access for convenience  
 
 The system uses a **simple GPS tracking module built with Arduino** to track university buses and display live location data to students.
 
 
 ## ✨ Key Features
 
-### 🚍 Bus Tracking
+### Bus Tracking
 - Real-time bus location tracking
 - GPS data collected via Arduino-based tracker
 - Live updates on both mobile and web apps
 
-### 🕒 Travel Timetable
+### Travel Timetable
 - Daily and weekly bus schedules
 - Route-based timetable filtering
 - Easy-to-read UI for quick access
 
-### 🧑‍✈️ Bus & Driver Information
+### Bus & Driver Information
 - Bus number, route, and capacity
 - Driver name and contact details
 - Helps students identify the correct bus easily
 
-### 📱 Mobile Application (Flutter)
+### Mobile Application (Flutter)
 - Android & iOS support
 - Student-friendly UI
 - Optimized for low data usage
 
-### 🌐 Web Application (React)
+### Web Application (React)
 - Accessible from any browser
 - Admin and information dashboard
 - Real-time map view of buses
@@ -52,16 +52,16 @@ The system uses a **simple GPS tracking module built with Arduino** to track uni
 
 ## 🛠️ Tech Stack
 
-### 📱 Mobile App
+### Mobile App
 - **Flutter**
 - Dart
 
-### 🌐 Web App
+### Web App
 - **React.js**
 - JavaScript / TypeScript
 - CSS / Tailwind (optional)
 
-### ⚙️ Backend & Hardware
+### Backend & Hardware
 - **Arduino** (GPS Tracking Module)
 - Simple GPS sensor (e.g., NEO-6M)
 - REST APIs (Node.js / Firebase / Spring Boot – optional integration)
@@ -89,7 +89,7 @@ UniRide/
 
 ## 🚀 Getting Started
 
-### 📱 Mobile App (Flutter)
+### Mobile App (Flutter)
 
 ```bash
 cd mobile-app
@@ -97,7 +97,7 @@ flutter pub get
 flutter run
 ````
 
-### 🌐 Web App (React)
+### Web App (React)
 
 ```bash
 cd web-app
@@ -105,7 +105,7 @@ npm install
 npm start
 ```
 
-### ⚙️ Arduino GPS Tracker
+### Arduino GPS Tracker
 
 1. Upload the Arduino code from `/hardware`
 2. Connect the GPS module
@@ -122,11 +122,11 @@ npm start
 
 ## 🔮 Future Enhancements
 
-* 🔔 Push notifications for bus delays
-* 🗺️ Route optimization
-* 📊 Travel analytics
-* 🔐 Student authentication
-* 🚌 Multiple university support
+* Push notifications for bus delays
+* Route optimization
+* Travel analytics
+* Student authentication
+* Multiple university support
 
 
 ## 🤝 Contributing
