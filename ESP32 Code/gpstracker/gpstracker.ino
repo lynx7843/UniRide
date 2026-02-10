@@ -9,7 +9,7 @@ const char* ssid = "YOUR_WIFI_NAME";
 const char* password = "YOUR_WIFI_PASSWORD";
 
 // 2. AWS API URL (Paste your API Gateway URL here)
-const char* serverUrl = "https://m6pw0tii65.execute-api.eu-north-1.amazonaws.com/SaveLocation";
+const char* serverUrl = "";
 
 TinyGPSPlus gps;
 HardwareSerial SerialGPS(2);
