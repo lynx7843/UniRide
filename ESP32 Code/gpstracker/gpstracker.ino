@@ -5,8 +5,8 @@
 #include <ArduinoJson.h> // Install this library!
 
 // 1. WiFi Credentials
-const char* ssid = "YOUR_WIFI_NAME";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid = "";
+const char* password = "";
 
 // 2. AWS API URL (Paste your API Gateway URL here)
 const char* serverUrl = "";
