@@ -37,7 +37,7 @@ void setup() {
 
 void loop() {
   // Print GPS data status every 2 seconds
-  if (millis() - lastPrint > 2000) {
+  if (millis() - lastPrint > 30000) {
     lastPrint = millis();
     Serial.println("\n--- GPS Status ---");
     Serial.print("Satellites: ");
