@@ -308,13 +308,5 @@ npm start
 * Multiple university support
 
 
-## 🤝 Contributing
-
-Contributions are welcome!
-Feel free to fork this repository, create a new branch, and submit a pull request.
-
-
-## 📜 License
-
 This project is developed for educational and academic purposes.
 License can be added later as required.
