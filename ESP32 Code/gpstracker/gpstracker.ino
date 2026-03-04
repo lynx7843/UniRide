@@ -3,7 +3,9 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <Adafruit_Fingerprint.h>
 
+// contection strings
 const char* ssid = "";
 const char* password = "";
 const char* serverUrl = "";
@@ -11,19 +13,31 @@ const char* serverUrl = "";
 TinyGPSPlus gps;
 HardwareSerial SerialGPS(2);
 
+HardwareSerial SerialFingerprint(1);
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&SerialFingerprint);
+
 unsigned long lastPrint = 0;
+
+String authStatus = "unverified";
 
 void setup() {
   Serial.begin(115200);
-  delay(1000); // Give serial time to initialize
+  delay(1000); 
   
-  Serial.println("\n=== GPS Tracker Starting ===");
+  Serial.println("\n=== Starting ===");
   
-  // Initialize GPS Serial
   SerialGPS.begin(9600, SERIAL_8N1, 25, 26);
-  Serial.println("GPS Serial initialized on pins RX=25, TX=26");
+  Serial.println("GPS pins RX=25, TX=26");
 
-  // Connect to WiFi
+  SerialFingerprint.begin(57600, SERIAL_8N1, 32, 33);
+  finger.begin(57600);
+  
+  if (finger.verifyPassword()) {
+    Serial.println("Fingerprint sensor found!");
+  } else {
+    Serial.println("Did not find fingerprint sensor :(");
+  }
+
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
@@ -36,26 +50,22 @@ void setup() {
 }
 
 void loop() {
-  // Print GPS data status every 2 seconds
+  checkFingerprint();
+
+  // every 30 seconds
   if (millis() - lastPrint > 30000) {
     lastPrint = millis();
-    Serial.println("\n--- GPS Status ---");
+    Serial.println("\n--- System Status ---");
+    Serial.print("Auth Status: ");
+    Serial.println(authStatus);
     Serial.print("Satellites: ");
     Serial.println(gps.satellites.value());
     Serial.print("Location valid: ");
     Serial.println(gps.location.isValid() ? "YES" : "NO");
-    Serial.print("Characters processed: ");
-    Serial.println(gps.charsProcessed());
-    Serial.print("Sentences with fix: ");
-    Serial.println(gps.sentencesWithFix());
-    Serial.print("Failed checksum: ");
-    Serial.println(gps.failedChecksum());
   }
 
-  // Check for GPS data
   while (SerialGPS.available() > 0) {
     char c = SerialGPS.read();
-    Serial.print(c); // Print raw NMEA data to see if GPS is transmitting
     
     if (gps.encode(c)) {
       if (gps.location.isValid()) {
@@ -66,22 +76,14 @@ void loop() {
         Serial.println(gps.location.lng(), 6);
         
         sendDataToAWS(gps.location.lat(), gps.location.lng());
-        delay(10000);
+        
+        delay(10000); 
       }
     }
   }
-  
-  // Check if GPS is getting ANY data
-  if (millis() > 5000 && gps.charsProcessed() < 10) {
-    Serial.println("\nWARNING: No GPS data detected!");
-    Serial.println("Check:");
-    Serial.println("1. GPS module power (3.3V or 5V depending on module)");
-    Serial.println("2. RX/TX connections (GPS TX -> ESP32 Pin 25)");
-    Serial.println("3. GPS module has clear view of sky");
-    Serial.println("4. Wait 30-60 seconds for satellite lock");
-  }
 }
 
+// sending data
 void sendDataToAWS(float lat, float lng) {
   if(WiFi.status() == WL_CONNECTED){
     HTTPClient http;
@@ -94,6 +96,7 @@ void sendDataToAWS(float lat, float lng) {
     doc["deviceId"] = "ESP32_NSBM_Student";
     doc["lat"] = lat;
     doc["lng"] = lng;
+    doc["status"] = authStatus;
     
     String requestBody;
     serializeJson(doc, requestBody);
@@ -114,5 +117,24 @@ void sendDataToAWS(float lat, float lng) {
     http.end();
   } else {
     Serial.println("WiFi Disconnected");
+  }
+}
+
+void checkFingerprint() {
+  uint8_t p = finger.getImage();
+  if (p != FINGERPRINT_OK)  return;
+
+  p = finger.image2Tz();
+  if (p != FINGERPRINT_OK)  return;
+
+  p = finger.fingerFastSearch();
+  if (p == FINGERPRINT_OK) {
+    Serial.println("\n*** FINGERPRINT VERIFIED! ***");
+    Serial.print("Found ID #"); Serial.print(finger.fingerID); 
+    Serial.print(" with confidence of "); Serial.println(finger.confidence);
+    
+    authStatus = "verified"; 
+  } else {
+    Serial.println("\n*** FINGERPRINT NOT RECOGNIZED ***");
   }
 }
