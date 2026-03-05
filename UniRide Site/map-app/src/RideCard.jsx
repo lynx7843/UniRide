@@ -48,11 +48,99 @@ const styles = `
   .card__timer {
     font-size: 15px;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #4f7ef8;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.5px;
   }
 
+  /* ── Journey progress bar ── */
+  .card__progress {
+    margin-bottom: 20px;
+  }
+
+  .card__progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .card__progress-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .card__progress-pct {
+    font-size: 12px;
+    font-weight: 700;
+    color: #4f7ef8;
+  }
+
+  .card__progress-track {
+    height: 6px;
+    background: #f0f0f0;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .card__progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4f7ef8, #7b5ef8);
+    border-radius: 99px;
+    transition: width 1s ease;
+  }
+
+  .card__progress-stops {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+
+  .card__progress-stop-label {
+    font-size: 10.5px;
+    color: #bbb;
+    font-weight: 500;
+  }
+
+  /* ── Status badge ── */
+  .card__status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .card__status-badge--enroute {
+    background: #eff3ff;
+    color: #4f7ef8;
+  }
+
+  .card__status-badge--arrived {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+
+  .card__status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── Driver section ── */
   .card__driver {
     display: flex;
     align-items: center;
@@ -129,6 +217,7 @@ const styles = `
     transform: scale(1.06);
   }
 
+  /* ── Route ── */
   .card__route {
     display: flex;
     flex-direction: column;
@@ -196,6 +285,38 @@ const styles = `
     font-weight: 500;
   }
 
+  /* ── Live stats row ── */
+  .card__live-stats {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .card__stat {
+    flex: 1;
+    background: #f7f9fc;
+    border: 1px solid #e4e8f0;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .card__stat-value {
+    font-size: 15px;
+    font-weight: 800;
+    color: #1a1a1a;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .card__stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #aaa;
+  }
+
+  /* ── Payment ── */
   .card__payment {
     background: #1a1a1a;
     border-radius: 14px;
@@ -251,13 +372,35 @@ const styles = `
   }
 `;
 
+// ─── Demo route simulation ─────────────────────────────────────────────────
+const TOTAL_STOPS = 12;
+let demoTick = 0;
+
+function getDemoStatus() {
+  demoTick++;
+  const progress = Math.min(demoTick / TOTAL_STOPS, 1);
+  const stopsLeft = TOTAL_STOPS - demoTick;
+  const minsLeft = Math.max(0, stopsLeft * 1.2);
+  const distLeft = (stopsLeft * 0.25).toFixed(1);
+  const speed = demoTick >= TOTAL_STOPS ? 0 : Math.round(22 + Math.random() * 12);
+  return {
+    progress: Math.round(progress * 100),
+    eta: minsLeft > 0 ? `${Math.ceil(minsLeft)} min` : "Arrived",
+    distLeft: `${distLeft} km`,
+    speed: `${speed} km/h`,
+    status: demoTick >= TOTAL_STOPS ? "Arrived" : "En Route",
+  };
+}
+
+// ─── Components ───────────────────────────────────────────────────────────────
+
 function Avatar({ src, alt, fallback }) {
   const [errored, setErrored] = useState(false);
   if (errored) return <div className="card__avatar-fallback">{fallback}</div>;
   return <img className="card__avatar" src={src} alt={alt} onError={() => setErrored(true)} />;
 }
 
-function useTimer(initialSeconds) {
+function useElapsedTimer(initialSeconds = 0) {
   const [seconds, setSeconds] = useState(initialSeconds);
   useEffect(() => {
     const id = setInterval(() => setSeconds(s => s + 1), 1000);
@@ -269,19 +412,81 @@ function useTimer(initialSeconds) {
   return `${h}:${m}:${s}`;
 }
 
-export default function RideCard() {
-  const timer = useTimer(320);
+export default function RideCard({ liveData = null }) {
+  const elapsed = useElapsedTimer(320);
+  const [status, setStatus] = useState({
+    progress: 0,
+    eta: "Calculating...",
+    distLeft: "—",
+    speed: "—",
+    status: "En Route",
+  });
+
+  useEffect(() => {
+    // If real liveData is passed from parent (MapComponent via props/context), use it
+    // Otherwise simulate with demo
+    if (liveData) {
+      setStatus(liveData);
+      return;
+    }
+    // Demo: update every 5s to simulate movement
+    const update = () => setStatus(getDemoStatus());
+    update();
+    const id = setInterval(update, 5000);
+    return () => clearInterval(id);
+  }, [liveData]);
+
+  const isArrived = status.status === "Arrived";
 
   return (
     <>
       <style>{styles}</style>
       <div className="card">
 
+        {/* ── Header: elapsed time ── */}
         <div className="card__header">
-          <span className="card__arrived-label">Arrived in</span>
-          <span className="card__timer">{timer}</span>
+          <span className="card__arrived-label">Journey time</span>
+          <span className="card__timer">{elapsed}</span>
         </div>
 
+        {/* ── Status badge ── */}
+        <span className={`card__status-badge ${isArrived ? 'card__status-badge--arrived' : 'card__status-badge--enroute'}`}>
+          <span className="card__status-dot" />
+          {status.status}
+        </span>
+
+        {/* ── Journey progress ── */}
+        <div className="card__progress">
+          <div className="card__progress-header">
+            <span className="card__progress-label">Journey progress</span>
+            <span className="card__progress-pct">{status.progress}%</span>
+          </div>
+          <div className="card__progress-track">
+            <div className="card__progress-fill" style={{ width: `${status.progress}%` }} />
+          </div>
+          <div className="card__progress-stops">
+            <span className="card__progress-stop-label">456 Elm St</span>
+            <span className="card__progress-stop-label">739 Main St</span>
+          </div>
+        </div>
+
+        {/* ── Live stats ── */}
+        <div className="card__live-stats">
+          <div className="card__stat">
+            <span className="card__stat-value">{status.eta}</span>
+            <span className="card__stat-label">ETA</span>
+          </div>
+          <div className="card__stat">
+            <span className="card__stat-value">{status.distLeft}</span>
+            <span className="card__stat-label">Remaining</span>
+          </div>
+          <div className="card__stat">
+            <span className="card__stat-value">{status.speed}</span>
+            <span className="card__stat-label">Speed</span>
+          </div>
+        </div>
+
+        {/* ── Driver ── */}
         <div className="card__driver">
           <div className="card__driver-info">
             <Avatar src="src/prof.png" alt="Jacob Jones" fallback="JJ" />
@@ -304,6 +509,7 @@ export default function RideCard() {
           </div>
         </div>
 
+        {/* ── Route ── */}
         <div className="card__route">
           <div className="card__stop">
             <div className="card__stop-icon-col">
@@ -326,6 +532,7 @@ export default function RideCard() {
           </div>
         </div>
 
+        {/* ── Payment ── */}
         <div className="card__payment">
           <div className="card__card-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -348,3 +555,4 @@ export default function RideCard() {
     </>
   );
 }
+
