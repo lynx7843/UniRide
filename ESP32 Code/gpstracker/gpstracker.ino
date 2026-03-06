@@ -3,9 +3,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <Adafruit_Fingerprint.h>
 
-// contection strings
 const char* ssid = "";
 const char* password = "";
 const char* serverUrl = "";
@@ -13,31 +11,22 @@ const char* serverUrl = "";
 TinyGPSPlus gps;
 HardwareSerial SerialGPS(2);
 
-HardwareSerial SerialFingerprint(1);
-Adafruit_Fingerprint finger = Adafruit_Fingerprint(&SerialFingerprint);
-
-unsigned long lastPrint = 0;
-
-String authStatus = "unverified";
+// Timers and state tracking variables
+unsigned long lastActionTime = 0; 
+float lastSentLat = 0.0;
+float lastSentLng = 0.0;
 
 void setup() {
   Serial.begin(115200);
   delay(1000); 
   
-  Serial.println("\n=== Starting ===");
+  Serial.println("\n=== GPS Tracker Starting ===");
   
+  // Initialize GPS Serial
   SerialGPS.begin(9600, SERIAL_8N1, 25, 26);
-  Serial.println("GPS pins RX=25, TX=26");
+  Serial.println("GPS Serial initialized on pins RX=25, TX=26");
 
-  SerialFingerprint.begin(57600, SERIAL_8N1, 32, 33);
-  finger.begin(57600);
-  
-  if (finger.verifyPassword()) {
-    Serial.println("Fingerprint sensor found!");
-  } else {
-    Serial.println("Did not find fingerprint sensor :(");
-  }
-
+  // Connect to WiFi
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
@@ -50,53 +39,61 @@ void setup() {
 }
 
 void loop() {
-  checkFingerprint();
+  // 1. Constantly feed the GPS module data (DO NOT put delays here)
+  while (SerialGPS.available() > 0) {
+    gps.encode(SerialGPS.read());
+  }
 
-  // every 30 seconds
-  if (millis() - lastPrint > 30000) {
-    lastPrint = millis();
-    Serial.println("\n--- System Status ---");
-    Serial.print("Auth Status: ");
-    Serial.println(authStatus);
+  // 2. Check if 30 seconds have passed
+  if (millis() - lastActionTime >= 30000) {
+    lastActionTime = millis(); // Reset the timer
+
+    // Print general status
+    Serial.println("\n--- GPS Status ---");
     Serial.print("Satellites: ");
     Serial.println(gps.satellites.value());
     Serial.print("Location valid: ");
     Serial.println(gps.location.isValid() ? "YES" : "NO");
-  }
 
-  while (SerialGPS.available() > 0) {
-    char c = SerialGPS.read();
-    
-    if (gps.encode(c)) {
-      if (gps.location.isValid()) {
-        Serial.println("\n*** Valid GPS Fix! ***");
+    // Process Location Data
+    if (gps.location.isValid()) {
+      float currentLat = gps.location.lat();
+      float currentLng = gps.location.lng();
+
+      // Check if the coordinates are exactly the same as the last ones sent
+      if (currentLat == lastSentLat && currentLng == lastSentLng) {
+        Serial.println("Bus is stationary. No data sent to AWS.");
+      } else {
+        Serial.println("\n*** Valid GPS Fix & Movement Detected! ***");
         Serial.print("Lat: ");
-        Serial.println(gps.location.lat(), 6);
+        Serial.println(currentLat, 6);
         Serial.print("Lng: ");
-        Serial.println(gps.location.lng(), 6);
+        Serial.println(currentLng, 6);
         
-        sendDataToAWS(gps.location.lat(), gps.location.lng());
+        sendDataToAWS(currentLat, currentLng);
         
-        delay(10000); 
+        // Update the last sent coordinates so we have a new baseline for next time
+        lastSentLat = currentLat;
+        lastSentLng = currentLng;
       }
+    } else {
+      Serial.println("Waiting for valid satellite lock...");
     }
   }
 }
 
-// sending data
 void sendDataToAWS(float lat, float lng) {
   if(WiFi.status() == WL_CONNECTED){
     HTTPClient http;
     
-    Serial.println("\n=== Sending to AWS ===");
+    Serial.println("=== Sending to AWS ===");
     http.begin(serverUrl);
     http.addHeader("Content-Type", "application/json");
     
     StaticJsonDocument<200> doc;
-    doc["deviceId"] = "ESP32_NSBM_Student";
+    doc["deviceId"] = "t001";
     doc["lat"] = lat;
     doc["lng"] = lng;
-    doc["status"] = authStatus;
     
     String requestBody;
     serializeJson(doc, requestBody);
@@ -117,24 +114,5 @@ void sendDataToAWS(float lat, float lng) {
     http.end();
   } else {
     Serial.println("WiFi Disconnected");
-  }
-}
-
-void checkFingerprint() {
-  uint8_t p = finger.getImage();
-  if (p != FINGERPRINT_OK)  return;
-
-  p = finger.image2Tz();
-  if (p != FINGERPRINT_OK)  return;
-
-  p = finger.fingerFastSearch();
-  if (p == FINGERPRINT_OK) {
-    Serial.println("\n*** FINGERPRINT VERIFIED! ***");
-    Serial.print("Found ID #"); Serial.print(finger.fingerID); 
-    Serial.print(" with confidence of "); Serial.println(finger.confidence);
-    
-    authStatus = "verified"; 
-  } else {
-    Serial.println("\n*** FINGERPRINT NOT RECOGNIZED ***");
   }
 }

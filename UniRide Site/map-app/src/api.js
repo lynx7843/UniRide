@@ -1,65 +1,102 @@
-// Journey data storage — tracks full path history for today
-const STORAGE_KEY_PREFIX = "uniride_journey_";
+// ─── NSBM University — fixed starting point ──────────────────────────────────
+export const NSBM_ORIGIN = { lat: 6.821531498028471, lng: 80.0415943541182 };
 
-function getTodayKey(id) {
-  const today = new Date().toISOString().split("T")[0]; // e.g. "2025-03-05"
-  return `${STORAGE_KEY_PREFIX}${id}_${today}`;
+// ─── Route history — persisted per device per calendar day ───────────────────
+function todayKey(deviceId) {
+  return `uniride_route_${deviceId}_${new Date().toISOString().split("T")[0]}`;
 }
-
-// Persist route history to sessionStorage (resets each tab/day)
-export function saveRouteHistory(id, coords) {
-  try {
-    sessionStorage.setItem(getTodayKey(id), JSON.stringify(coords));
-  } catch (_) {}
+export function saveRouteHistory(deviceId, coords) {
+  try { sessionStorage.setItem(todayKey(deviceId), JSON.stringify(coords)); } catch (_) {}
 }
-
-export function loadRouteHistory(id) {
+export function loadRouteHistory(deviceId) {
   try {
-    const raw = sessionStorage.getItem(getTodayKey(id));
+    const raw = sessionStorage.getItem(todayKey(deviceId));
     return raw ? JSON.parse(raw) : [];
-  } catch (_) {
+  } catch (_) { return []; }
+}
+
+// ─── AWS APIs ─────────────────────────────────────────────────────────────────
+const LOCATION_API = '';
+const SHUTTLE_API  = 'YOUR_API_GATEWAY_URL/GetShuttles'; // Replace with your API URL
+const DRIVER_API   = 'YOUR_API_GATEWAY_URL/GetDrivers';  // Replace with your API URL
+
+// Fetches the latest known location for every device.
+// Never throws — always returns an array (empty on failure) so the map
+// continues to display whatever was previously loaded.
+export const fetchLocationData = async () => {
+  try {
+    const response = await fetch(LOCATION_API);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    if (!Array.isArray(data)) throw new Error('Unexpected payload');
+
+    // Keep only the newest record per deviceId.
+    // Lambda already sorts newest-first, so first occurrence wins.
+    const latestPerDevice = {};
+    data.forEach(item => {
+      if (item.deviceId && !latestPerDevice[item.deviceId]) {
+        latestPerDevice[item.deviceId] = item;
+      }
+    });
+
+    return Object.values(latestPerDevice);
+  } catch (err) {
+    console.warn('fetchLocationData failed:', err.message);
+    return []; // caller keeps previous state; nothing breaks
+  }
+};
+
+export const fetchShuttleData = async () => {
+  try {
+    const response = await fetch(SHUTTLE_API);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } catch (err) {
+    console.warn('fetchShuttleData failed:', err.message);
     return [];
   }
-}
-
-// Fetch current live locations from your AWS API Gateway endpoint
-export const fetchLocationData = async () => {
-  // Replace with your active AWS API Gateway endpoint URL
-  const response = await fetch('');
-  if (!response.ok) throw new Error('Failed to fetch location data');
-  return response.json();
-  // Expected JSON format:
-  // [{ 
-  //   id: "shuttle-1", 
-  //   lat: 6.8211, 
-  //   lng: 80.0409, 
-  //   name: "Shuttle A", 
-  //   status: "En Route",
-  //   startLat: 6.8100,   // optional: journey start point
-  //   startLng: 80.0300,
-  //   destLat: 6.8350,    // optional: final destination
-  //   destLng: 80.0550,
-  //   speed: 25,          // optional: km/h
-  //   heading: 90         // optional: degrees
-  // }]
 };
 
-// Fetch the planned route between two points using OSRM (free, no API key needed)
+export const fetchDriverData = async () => {
+  try {
+    const response = await fetch(DRIVER_API);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } catch (err) {
+    console.warn('fetchDriverData failed:', err.message);
+    return [];
+  }
+};
+
+// ─── Road-snapped route via OSRM (free, no API key, real roads) ──────────────
+// Uses the public OSRM demo server with the "driving" profile and full geometry.
+// Coordinates are lng,lat for OSRM but we convert back to [lat,lng] for Leaflet.
 export const fetchPlannedRoute = async (startLat, startLng, destLat, destLng) => {
   try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${destLng},${destLat}?overview=full&geometries=geojson`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Route fetch failed');
-    const data = await response.json();
-    if (data.routes && data.routes.length > 0) {
-      const coords = data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-      const durationSeconds = data.routes[0].duration;
-      const distanceMeters = data.routes[0].distance;
-      return { coords, durationSeconds, distanceMeters };
-    }
-  } catch (err) {
-    console.warn("OSRM route fetch failed:", err);
-  }
-  return null;
-};
+    // OSRM expects coordinates as "lng,lat" pairs separated by semicolons
+    const coords = `${startLng},${startLat};${destLng},${destLat}`;
+    const url =
+      `https://router.project-osrm.org/route/v1/driving/${coords}` +
+      `?overview=full&geometries=geojson&steps=false`;
 
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`OSRM HTTP ${res.status}`);
+
+    const data = await res.json();
+
+    if (data.code !== 'Ok' || !data.routes?.length) {
+      throw new Error(`OSRM: ${data.code}`);
+    }
+
+    // GeoJSON geometry coordinates are [lng, lat] — flip to [lat, lng] for Leaflet
+    const leafletCoords = data.routes[0].geometry.coordinates.map(
+      ([lng, lat]) => [lat, lng]
+    );
+
+    return { coords: leafletCoords };
+  } catch (err) {
+    console.warn('fetchPlannedRoute failed:', err.message);
+    return null; // MapComponent falls back to straight line
+  }
+};
