@@ -15,66 +15,67 @@ export function loadRouteHistory(deviceId) {
   } catch (_) { return []; }
 }
 
-// ─── AWS APIs ─────────────────────────────────────────────────────────────────
+// ─── AWS API endpoints ────────────────────────────────────────────────────────
 const LOCATION_API = '';
-const SHUTTLE_API  = 'YOUR_API_GATEWAY_URL/GetShuttles'; // Replace with your API URL
-const DRIVER_API   = 'YOUR_API_GATEWAY_URL/GetDrivers';  // Replace with your API URL
+const SHUTTLE_API  = '';
+const DRIVER_API   = '';
 
-// Fetches the latest known location for every device.
-// Never throws — always returns an array (empty on failure) so the map
-// continues to display whatever was previously loaded.
+// ─── GPSTrackerData: { deviceId (String), timestamp (Number/ms), lat, lng } ──
+// Returns array of latest-per-device records. Never throws.
 export const fetchLocationData = async () => {
   try {
-    const response = await fetch(LOCATION_API);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const res = await fetch(LOCATION_API);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const raw = await res.json();
+    if (!Array.isArray(raw)) throw new Error('Non-array response');
 
-    const data = await response.json();
-    if (!Array.isArray(data)) throw new Error('Unexpected payload');
+    // DynamoDB schema: deviceId (String), timestamp (Number/ms), lat (Number), lng (Number)
+    const parsed = raw
+      .map(item => ({
+        deviceId:  item.deviceId,
+        lat:       item.lat,
+        lng:       item.lng,
+        timestamp: item.timestamp,  // already a Number — Unix ms epoch
+      }))
+      .filter(v => v.deviceId && v.lat != null && v.lng != null);
 
-    // Keep only the newest record per deviceId.
-    // Lambda already sorts newest-first, so first occurrence wins.
-    const latestPerDevice = {};
-    data.forEach(item => {
-      if (item.deviceId && !latestPerDevice[item.deviceId]) {
-        latestPerDevice[item.deviceId] = item;
-      }
-    });
-
-    return Object.values(latestPerDevice);
+    // Lambda sorts newest-first — first occurrence per deviceId is the latest
+    const latest = {};
+    parsed.forEach(v => { if (!latest[v.deviceId]) latest[v.deviceId] = v; });
+    return Object.values(latest);
   } catch (err) {
-    console.warn('fetchLocationData failed:', err.message);
-    return []; // caller keeps previous state; nothing breaks
+    console.warn('fetchLocationData:', err.message);
+    return [];
   }
 };
 
+// ─── ShuttleDetails: { shuttleId, capacity, deviceId, driverId, vehicleNumber } ─
 export const fetchShuttleData = async () => {
   try {
-    const response = await fetch(SHUTTLE_API);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
+    const res = await fetch(SHUTTLE_API);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
   } catch (err) {
-    console.warn('fetchShuttleData failed:', err.message);
+    console.warn('fetchShuttleData:', err.message);
     return [];
   }
 };
 
+// ─── DriverDetails: { driverId, driverName, licenseNumber, nic, phoneNumber } ─
 export const fetchDriverData = async () => {
   try {
-    const response = await fetch(DRIVER_API);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
+    const res = await fetch(DRIVER_API);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
   } catch (err) {
-    console.warn('fetchDriverData failed:', err.message);
+    console.warn('fetchDriverData:', err.message);
     return [];
   }
 };
 
-// ─── Road-snapped route via OSRM (free, no API key, real roads) ──────────────
-// Uses the public OSRM demo server with the "driving" profile and full geometry.
-// Coordinates are lng,lat for OSRM but we convert back to [lat,lng] for Leaflet.
+// ─── Road-snapped route via OSRM (free, no key, real roads) ─────────────────
 export const fetchPlannedRoute = async (startLat, startLng, destLat, destLng) => {
   try {
-    // OSRM expects coordinates as "lng,lat" pairs separated by semicolons
     const coords = `${startLng},${startLat};${destLng},${destLat}`;
     const url =
       `https://router.project-osrm.org/route/v1/driving/${coords}` +
@@ -82,21 +83,15 @@ export const fetchPlannedRoute = async (startLat, startLng, destLat, destLng) =>
 
     const res = await fetch(url);
     if (!res.ok) throw new Error(`OSRM HTTP ${res.status}`);
-
     const data = await res.json();
+    if (data.code !== 'Ok' || !data.routes?.length) throw new Error(`OSRM: ${data.code}`);
 
-    if (data.code !== 'Ok' || !data.routes?.length) {
-      throw new Error(`OSRM: ${data.code}`);
-    }
-
-    // GeoJSON geometry coordinates are [lng, lat] — flip to [lat, lng] for Leaflet
-    const leafletCoords = data.routes[0].geometry.coordinates.map(
-      ([lng, lat]) => [lat, lng]
-    );
-
-    return { coords: leafletCoords };
+    // GeoJSON is [lng, lat] — flip to [lat, lng] for Leaflet
+    return {
+      coords: data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]),
+    };
   } catch (err) {
-    console.warn('fetchPlannedRoute failed:', err.message);
-    return null; // MapComponent falls back to straight line
+    console.warn('fetchPlannedRoute:', err.message);
+    return null;
   }
 };

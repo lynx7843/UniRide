@@ -5,22 +5,25 @@ import {
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
-  fetchLocationData, fetchShuttleData, fetchDriverData,
+  fetchShuttleData, fetchDriverData,
   fetchPlannedRoute, saveRouteHistory, loadRouteHistory, NSBM_ORIGIN,
 } from './api';
 import { useSearch } from './SearchContext';
 import RideCard from './RideCard';
 
-// ─── Offline threshold: treat tracker as offline if last ping > 5 minutes ago ─
-const OFFLINE_THRESHOLD_MS = 5 * 60 * 1000;
+// ─── Direct API call — bypass api.js fetchLocationData so we can debug ────────
+const LOCATION_API = '';
+
+// Offline if last ping > 10 minutes ago (generous — tracker was 1.4h old in example)
+const OFFLINE_THRESHOLD_MS = 10 * 60 * 1000;
 
 function isOffline(vehicle) {
   if (!vehicle?.timestamp) return true;
-  return Date.now() - new Date(vehicle.timestamp).getTime() > OFFLINE_THRESHOLD_MS;
+  // timestamp is a plain Number (Unix ms epoch e.g. 1772812530997)
+  return Date.now() - vehicle.timestamp > OFFLINE_THRESHOLD_MS;
 }
 
 // ─── Map Icons ────────────────────────────────────────────────────────────────
-// Online shuttle icon — blue circle, green status dot
 const shuttleSvgOnline = `
   <div style="position:relative;width:46px;height:46px;cursor:pointer;">
     <svg xmlns="http://www.w3.org/2000/svg" width="46" height="46" viewBox="0 0 46 46">
@@ -29,32 +32,19 @@ const shuttleSvgOnline = `
         <path d="M23 11 L31 33 L23 28 L15 33 Z" fill="white"/>
       </g>
     </svg>
-    <div style="
-      position:absolute;bottom:0;right:0;
-      width:13px;height:13px;border-radius:50%;
-      background:#22c55e;
-      border:2px solid white;
-    "></div>
-  </div>
-`;
+    <div style="position:absolute;bottom:0;right:0;width:13px;height:13px;border-radius:50%;background:#22c55e;border:2px solid white;"></div>
+  </div>`;
 
-// Offline shuttle icon — grey circle, grey status dot, semi-transparent
 const shuttleSvgOffline = `
-  <div style="position:relative;width:46px;height:46px;cursor:pointer;opacity:0.72;">
+  <div style="position:relative;width:46px;height:46px;cursor:pointer;opacity:0.75;">
     <svg xmlns="http://www.w3.org/2000/svg" width="46" height="46" viewBox="0 0 46 46">
       <circle cx="23" cy="23" r="21" fill="#94a3b8" stroke="white" stroke-width="3" opacity="0.97"/>
       <g transform="rotate(90,23,23)">
         <path d="M23 11 L31 33 L23 28 L15 33 Z" fill="white"/>
       </g>
     </svg>
-    <div style="
-      position:absolute;bottom:0;right:0;
-      width:13px;height:13px;border-radius:50%;
-      background:#94a3b8;
-      border:2px solid white;
-    "></div>
-  </div>
-`;
+    <div style="position:absolute;bottom:0;right:0;width:13px;height:13px;border-radius:50%;background:#94a3b8;border:2px solid white;"></div>
+  </div>`;
 
 const nsbmSvg = `
   <div style="display:flex;flex-direction:column;align-items:center;">
@@ -64,8 +54,7 @@ const nsbmSvg = `
       <circle cx="11" cy="11" r="9" fill="#4f7ef8" stroke="white" stroke-width="2.5"/>
       <circle cx="11" cy="11" r="4" fill="white"/>
     </svg>
-  </div>
-`;
+  </div>`;
 
 const destSvg = (label = 'Home') => `
   <div style="display:flex;flex-direction:column;align-items:center;">
@@ -75,13 +64,11 @@ const destSvg = (label = 'Home') => `
       <path d="M12 1C6.477 1 2 5.477 2 11c0 7.5 10 19 10 19S22 18.5 22 11C22 5.477 17.523 1 12 1z" fill="#ef4444" stroke="white" stroke-width="2"/>
       <circle cx="12" cy="11" r="4" fill="white"/>
     </svg>
-  </div>
-`;
+  </div>`;
 
 const makeIcon = (html, size, anchor) =>
   L.divIcon({ html, className: '', iconSize: size, iconAnchor: anchor });
 
-// ─── FlyTo Helper ─────────────────────────────────────────────────────────────
 function FlyTo({ lat, lng, zoom = 14 }) {
   const map = useMap();
   useEffect(() => {
@@ -90,15 +77,13 @@ function FlyTo({ lat, lng, zoom = 14 }) {
   return null;
 }
 
-// ─── FitBounds Helper ─────────────────────────────────────────────────────────
-// fitKey increments on every new route so this re-fires even for the same coords
 function FitBounds({ coords, fitKey }) {
   const map = useMap();
   useEffect(() => {
     if (coords?.length >= 2) {
       map.fitBounds(L.latLngBounds(coords), { padding: [70, 70], maxZoom: 15 });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey, map]);
   return null;
 }
@@ -107,30 +92,26 @@ function FitBounds({ coords, fitKey }) {
 const MapComponent = () => {
   const { destination } = useSearch();
 
-  // AWS data
   const [vehicles, setVehicles]             = useState([]);
   const [shuttles, setShuttles]             = useState([]);
   const [drivers, setDrivers]               = useState([]);
   const [routeHistories, setRouteHistories] = useState({});
-
-  // Route
   const [plannedRoute, setPlannedRoute]     = useState(null);
   const [fitCoords, setFitCoords]           = useState(null);
   const [fitKey, setFitKey]                 = useState(0);
-
-  // UI
   const [selectedDeviceId, setSelectedDeviceId] = useState(null);
   const [flyTo, setFlyTo]                       = useState(null);
+  const [apiError, setApiError]                 = useState(null); // visible debug
 
   const lastDestRef = useRef(null);
 
-  // ── 1. Fetch shuttle & driver metadata once ───────────────────────────────
+  // ── 1. Shuttle + driver metadata ─────────────────────────────────────────
   useEffect(() => {
     fetchShuttleData().then(setShuttles);
     fetchDriverData().then(setDrivers);
   }, []);
 
-  // ── 2. Auto-route NSBM → destination whenever destination changes ─────────
+  // ── 2. Route: NSBM → destination ─────────────────────────────────────────
   useEffect(() => {
     if (!destination) {
       setPlannedRoute(null);
@@ -138,7 +119,6 @@ const MapComponent = () => {
       lastDestRef.current = null;
       return;
     }
-
     const destKey = `${destination.lat},${destination.lng}`;
     if (destKey === lastDestRef.current) return;
     lastDestRef.current = destKey;
@@ -147,33 +127,53 @@ const MapComponent = () => {
       NSBM_ORIGIN.lat, NSBM_ORIGIN.lng,
       destination.lat, destination.lng,
     ).then(route => {
-      // Fallback to straight line if AWS route unavailable
       const coords = route?.coords?.length > 1
         ? route.coords
         : [[NSBM_ORIGIN.lat, NSBM_ORIGIN.lng], [destination.lat, destination.lng]];
-
       setPlannedRoute({ coords });
       setFitCoords(coords);
-      setFitKey(k => k + 1); // force FitBounds to re-fire for every new destination
+      setFitKey(k => k + 1);
     });
   }, [destination]);
 
-  // ── 3. Poll GPS every 30 s ────────────────────────────────────────────────
-  // fetchLocationData never throws — it returns [] on any failure.
-  // We MERGE into existing vehicle state so that if the API returns an empty
-  // array (tracker off / network blip), last known positions stay on the map.
+  // ── 3. GPS polling — direct fetch with known DynamoDB schema ─────────────
+  // Schema: { deviceId (String), timestamp (Number/ms), lat (Number), lng (Number) }
   const pollGPS = useCallback(async () => {
-    const data = await fetchLocationData(); // always an array, never throws
+    try {
+      const res = await fetch(LOCATION_API);
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
 
-    if (data.length > 0) {
-      // Fresh data received — merge by deviceId so we never lose a device
+      const raw = await res.json();
+      setApiError(null);
+
+      if (!Array.isArray(raw) || raw.length === 0) return;
+
+      // Schema: deviceId (String), timestamp (Number ms), lat (Number), lng (Number)
+      const parsed = raw
+        .map(item => ({
+          deviceId:  item.deviceId,
+          lat:       item.lat,
+          lng:       item.lng,
+          timestamp: item.timestamp,  // plain Number, Unix ms epoch
+        }))
+        .filter(v => v.deviceId && v.lat != null && v.lng != null);
+
+      if (parsed.length === 0) return;
+
+      // Keep only newest per deviceId (Lambda already sorts newest-first)
+      const latestPerDevice = {};
+      parsed.forEach(v => {
+        if (!latestPerDevice[v.deviceId]) latestPerDevice[v.deviceId] = v;
+      });
+      const data = Object.values(latestPerDevice);
+
+      // Merge — never wipe previously seen devices
       setVehicles(prev => {
-        const merged = { ...Object.fromEntries(prev.map(v => [v.deviceId, v])) };
+        const merged = Object.fromEntries(prev.map(v => [v.deviceId, v]));
         data.forEach(v => { merged[v.deviceId] = v; });
         return Object.values(merged);
       });
 
-      // Update breadcrumb trails
       setRouteHistories(prev => {
         const next = { ...prev };
         data.forEach(v => {
@@ -187,9 +187,12 @@ const MapComponent = () => {
         });
         return next;
       });
+
+    } catch (err) {
+      setApiError(err.message);
+      console.error('GPS poll failed:', err.message);
+      // Do NOT clear vehicles — last known positions stay on map
     }
-    // If data is empty (tracker offline / API error), vehicles state is untouched
-    // so the last known marker stays visible on the map
   }, []);
 
   useEffect(() => {
@@ -206,7 +209,7 @@ const MapComponent = () => {
   return (
     <div style={{ position: 'relative', height: 'calc(100vh - 64px)', width: '100vw', marginTop: 64 }}>
 
-      {/* ── RideCard overlay — bottom-left ── */}
+      {/* ── RideCard overlay ── */}
       {selectedDeviceId && (
         <div style={{ position: 'absolute', bottom: 30, left: 30, zIndex: 1000 }}>
           <RideCard
@@ -215,6 +218,18 @@ const MapComponent = () => {
             vehicle={activeTracker}
             onClose={() => setSelectedDeviceId(null)}
           />
+        </div>
+      )}
+
+      {/* ── API error toast (only shown when fetch fails) ── */}
+      {apiError && (
+        <div style={{
+          position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 1000, background: '#fef2f2', border: '1px solid #fca5a5',
+          borderRadius: 10, padding: '8px 16px', fontSize: 12, color: '#b91c1c',
+          fontFamily: 'monospace', maxWidth: '90vw', textAlign: 'center',
+        }}>
+          ⚠ GPS fetch failed: {apiError}
         </div>
       )}
 
@@ -231,13 +246,13 @@ const MapComponent = () => {
         {flyTo && <FlyTo lat={flyTo.lat} lng={flyTo.lng} zoom={13} />}
         {fitCoords && <FitBounds coords={fitCoords} fitKey={fitKey} />}
 
-        {/* NSBM origin marker */}
+        {/* NSBM origin */}
         <Marker
           position={[NSBM_ORIGIN.lat, NSBM_ORIGIN.lng]}
           icon={makeIcon(nsbmSvg, [80, 52], [40, 52])}
         />
 
-        {/* Destination marker */}
+        {/* Destination */}
         {destination && (
           <Marker
             position={[destination.lat, destination.lng]}
@@ -245,7 +260,7 @@ const MapComponent = () => {
           />
         )}
 
-        {/* Planned route: NSBM → destination */}
+        {/* Road route */}
         {plannedRoute?.coords?.length > 1 && (
           <Polyline
             positions={plannedRoute.coords}
@@ -253,18 +268,13 @@ const MapComponent = () => {
           />
         )}
 
-        {/* ── Vehicles — always rendered using last known AWS position ── */}
+        {/* Vehicles — always shown at last known AWS position */}
         {vehicles.map(v => {
           const offline = isOffline(v);
           const history = routeHistories[v.deviceId] || [];
-          const icon = makeIcon(
-            offline ? shuttleSvgOffline : shuttleSvgOnline,
-            [46, 46], [23, 23],
-          );
 
           return (
             <React.Fragment key={v.deviceId}>
-              {/* Breadcrumb trail — greyed out when offline */}
               {history.length > 1 && (
                 <Polyline
                   positions={history}
@@ -272,8 +282,7 @@ const MapComponent = () => {
                     color: offline ? '#94a3b8' : '#4f7ef8',
                     weight: 5,
                     opacity: offline ? 0.35 : 0.9,
-                    lineCap: 'round',
-                    lineJoin: 'round',
+                    lineCap: 'round', lineJoin: 'round',
                   }}
                 />
               )}
@@ -286,17 +295,13 @@ const MapComponent = () => {
                     radius={3}
                     pathOptions={{
                       color: offline ? '#94a3b8' : '#4f7ef8',
-                      fillColor: '#fff',
-                      fillOpacity: 1,
-                      weight: 1.5,
+                      fillColor: '#fff', fillOpacity: 1, weight: 1.5,
                     }}
                   />
                 ))}
-
-              {/* Shuttle marker at last known position */}
               <Marker
                 position={[v.lat, v.lng]}
-                icon={icon}
+                icon={makeIcon(offline ? shuttleSvgOffline : shuttleSvgOnline, [46, 46], [23, 23])}
                 eventHandlers={{
                   click: () => {
                     setSelectedDeviceId(v.deviceId);
