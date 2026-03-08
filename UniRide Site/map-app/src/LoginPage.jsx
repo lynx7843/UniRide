@@ -1,14 +1,47 @@
 import { useState } from "react";
 
-export default function LoginPage({ onClose, onShowRegister }) {
+// Make sure to match the stage ('/dev') used in your API Gateway
+const LOGIN_API = "";
+
+export default function LoginPage({ onLoginSuccess, onShowRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [focused, setFocused] = useState(null);
   const [showPass, setShowPass] = useState(false);
+  
+  // New state variables for API handling
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("Login submitted!");
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      const response = await fetch(LOGIN_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Pass the user data back to App.js so it can show the map
+        if (onLoginSuccess) {
+          onLoginSuccess(data.userData); 
+        }
+      } else {
+        // Display the 401 Unauthorized message from your Lambda
+        setErrorMsg(data.message || "Invalid email or password.");
+      }
+    } catch (error) {
+      console.error("Login Error:", error);
+      setErrorMsg("Failed to connect to the server.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -98,6 +131,18 @@ export default function LoginPage({ onClose, onShowRegister }) {
 
         .pass-toggle:hover { color: #5a6fd6; }
 
+        .error-message {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px;
+          color: #ef4444;
+          background: #fef2f2;
+          padding: 10px;
+          border-radius: 8px;
+          margin-bottom: 16px;
+          text-align: center;
+          border: 1px solid #fecaca;
+        }
+
         .submit-btn {
           width: 100%;
           padding: 16px;
@@ -114,58 +159,20 @@ export default function LoginPage({ onClose, onShowRegister }) {
           box-shadow: 0 4px 20px rgba(90, 111, 214, 0.25);
         }
 
-        .submit-btn:hover {
+        .submit-btn:hover:not(:disabled) {
           background: #4a5dc4;
           transform: translateY(-1px);
           box-shadow: 0 8px 28px rgba(90, 111, 214, 0.32);
         }
 
-        .submit-btn:active {
+        .submit-btn:active:not(:disabled) {
           transform: translateY(0);
         }
 
-        .divider {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          margin: 28px 0;
-        }
-
-        .divider-line {
-          flex: 1;
-          height: 1px;
-          background: #e8ecf8;
-        }
-
-        .divider-text {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 12px;
-          color: #c0c8e8;
-          font-weight: 300;
-          letter-spacing: 0.05em;
-        }
-
-        .social-btn {
-          width: 100%;
-          padding: 13px;
-          background: #f8f9ff;
-          border: 1.8px solid #e0e5f7;
-          border-radius: 14px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 14px;
-          font-weight: 400;
-          color: #1a1a2e;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          transition: background 0.2s, border-color 0.2s;
-        }
-
-        .social-btn:hover {
-          background: #eef1fc;
-          border-color: #bfceff;
+        .submit-btn:disabled {
+          background: #aab0d0;
+          cursor: not-allowed;
+          box-shadow: none;
         }
 
         .footer-text {
@@ -221,15 +228,15 @@ export default function LoginPage({ onClose, onShowRegister }) {
       <div className="blob" style={{ width: 200, height: 200, top: "40%", left: "10%", opacity: 0.25 }} />
 
       <div className="login-card">
-        {/* Logo mark */}
-        <div className="logo-mark">
-
-        </div>
+        <div className="logo-mark"></div>
 
         <h1 style={styles.heading}>Welcome Back</h1>
         <p style={styles.subheading}>Sign in to continue to your workspace</p>
 
         <form onSubmit={handleSubmit} style={{ marginTop: 36 }}>
+          
+          {errorMsg && <div className="error-message">{errorMsg}</div>}
+
           {/* Email */}
           <div className="input-wrap">
             <label className={`input-label${focused === "email" ? " focused" : ""}`}>Email Address</label>
@@ -263,7 +270,6 @@ export default function LoginPage({ onClose, onShowRegister }) {
               type="button"
               className="pass-toggle"
               onClick={() => setShowPass((p) => !p)}
-              aria-label="Toggle password visibility"
             >
               {showPass ? (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -282,7 +288,9 @@ export default function LoginPage({ onClose, onShowRegister }) {
 
           <a className="forgot-link">Forgot password?</a>
 
-          <button className="submit-btn" type="submit">Sign In</button>
+          <button className="submit-btn" type="submit" disabled={isLoading}>
+            {isLoading ? "Signing In..." : "Sign In"}
+          </button>
         </form>
 
         <p className="footer-text">
