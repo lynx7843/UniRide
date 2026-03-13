@@ -3,6 +3,7 @@ import LoginPage from './LoginPage';
 import SignupPage from './SignupPage';
 import MapComponent from './MapComponent';
 import Navbar from './Navbar';
+import EditProfile from './profile';
 import { SearchProvider } from './SearchContext';
 import './styles.css';
 
@@ -39,13 +40,21 @@ function App() {
         />
       )}
 
-      {/* Show Main Tracking App */}
+      {/* Show Main Tracking App or profile page */}
       {currentView === 'map' && (
         <SearchProvider>
-          {/* Pass currentUser to Navbar so it displays their name */}
-          <Navbar user={currentUser} />
+          {/* Pass currentUser to Navbar and hook up profile click */}
+          <Navbar
+            user={currentUser}
+            onProfileClick={() => setCurrentView('profile')}
+          />
           <MapComponent />
         </SearchProvider>
+      )}
+
+      {/* Profile view triggered from navbar */}
+      {currentView === 'profile' && (
+        <EditProfile onBack={() => setCurrentView('map')} />
       )}
 
     </div>
