@@ -278,7 +278,7 @@ function Avatar({ src, alt }) {
   return <img className="navbar__avatar" src={src} alt={alt} onError={() => setErrored(true)} />;
 }
 
-export default function Navbar() {
+export default function Navbar({ user, onProfileClick }) {
   const [query, setQuery] = useState("");
   const { destination, searching, searchError, search, clearDestination } = useSearch();
 
@@ -363,9 +363,9 @@ export default function Navbar() {
             <span className="navbar__bell-dot"/>
           </div>
 
-          <div className="navbar__profile">
-            <Avatar src="src/prof.png" alt="John Doe"/>
-            <span className="navbar__name">John Doe</span>
+          <div className="navbar__profile" onClick={onProfileClick}>
+            <Avatar src={user?.avatar || "src/prof.png"} alt={user?.name || "User"} />
+            <span className="navbar__name">{user?.name || "John Doe"}</span>
             <span className="navbar__chevron">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9"/>
