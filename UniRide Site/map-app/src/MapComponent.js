@@ -10,9 +10,10 @@ import {
 } from './api';
 import { useSearch } from './SearchContext';
 import RideCard from './RideCard';
+import DriverList from './DriverList';
 
 // ─── Direct API call — bypass api.js fetchLocationData so we can debug ────────
-const LOCATION_API = '';
+const LOCATION_API = 'https://123.amazonaws.com/dev/locations';
 
 // Offline if last ping > 10 minutes ago (generous — tracker was 1.4h old in example)
 const OFFLINE_THRESHOLD_MS = 10 * 60 * 1000;
@@ -208,6 +209,9 @@ const MapComponent = () => {
 
   return (
     <div style={{ position: 'relative', height: 'calc(100vh - 64px)', width: '100vw', marginTop: 64 }}>
+
+      {/* ── DriverList overlay ── */}
+      <DriverList />
 
       {/* ── RideCard overlay ── */}
       {selectedDeviceId && (

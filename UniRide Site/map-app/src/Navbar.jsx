@@ -255,7 +255,7 @@ const styles = `
     background: #d0d8f0;
   }
   .navbar__avatar-fallback {
-    width: 30px; height: 30px;
+    width: 35px; height: 35px;
     border-radius: 50%;
     background: linear-gradient(135deg, #4f7ef8, #7b5ef8);
     display: flex; align-items: center; justify-content: center;
@@ -274,7 +274,7 @@ const styles = `
 
 function Avatar({ src, alt }) {
   const [errored, setErrored] = useState(false);
-  if (errored) return <div className="navbar__avatar-fallback">JD</div>;
+  if (errored) return <div className="navbar__avatar-fallback">Guest</div>;
   return <img className="navbar__avatar" src={src} alt={alt} onError={() => setErrored(true)} />;
 }
 

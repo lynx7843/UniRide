@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 // Update with your actual API Gateway URL if different
-const REGISTER_API = "";
+const REGISTER_API = "https://123.amazonaws.com/RegisterUser";
 
 export default function SignupPage({ onClose, onShowLogin }) {
   const [name, setName] = useState("");
