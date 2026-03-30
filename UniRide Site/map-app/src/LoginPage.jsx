@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 // Make sure to match the stage ('/dev') used in your API Gateway
-const LOGIN_API = "https://123.amazonaws.com/LoginUser";
+const LOGIN_API = "https://123.amazon.com/LoginUser";
 
 export default function LoginPage({ onLoginSuccess, onShowRegister }) {
   const [email, setEmail] = useState("");

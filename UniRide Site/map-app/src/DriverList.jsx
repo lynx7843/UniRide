@@ -16,8 +16,8 @@ export default function DriverList() {
       try {
         // Fetch both tables at the exact same time
         const [driversRes, shuttlesRes] = await Promise.all([
-          fetch("https://123.amazonaws.com/dev/GetDrivers"),
-          fetch("https://123.amazonaws.com/dev/GetShuttles")
+          fetch("https://123.amazon.com/dev/GetDrivers"),
+          fetch("https://123.amazon.com/dev/GetShuttles")
         ]);
 
         const driversData = await driversRes.json();

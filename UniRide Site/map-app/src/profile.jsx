@@ -300,7 +300,7 @@ const EditIcon = () => (
   </svg>
 );
 
-export default function EditProfile({ onBack }) {
+export default function EditProfile({ onBack, onLogout }) {
   const [profileOpen, setProfileOpen] = useState(true);
   const [toast, setToast] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "", userId: "" });
@@ -322,7 +322,7 @@ export default function EditProfile({ onBack }) {
           <div className="sidebar-logo">UniRide</div>
 
           <nav className="sidebar-nav">
-            <button className="nav-item"><MapIcon /> Map</button>
+            <button className="nav-item" onClick={onBack}><MapIcon /> Map</button>
 
             <button className="nav-item parent" onClick={() => setProfileOpen(o => !o)}>
               <UserIcon /> Profile <ChevronIcon open={profileOpen} />
@@ -336,7 +336,7 @@ export default function EditProfile({ onBack }) {
           </nav>
 
           <div className="sidebar-footer">
-            <button className="nav-item logout"><LogoutIcon /> Log Out</button>
+            <button className="nav-item logout" onClick={onLogout}><LogoutIcon /> Log Out</button>
           </div>
         </aside>
 

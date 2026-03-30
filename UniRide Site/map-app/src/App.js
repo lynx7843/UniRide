@@ -54,7 +54,10 @@ function App() {
 
       {/* Profile view triggered from navbar */}
       {currentView === 'profile' && (
-        <EditProfile onBack={() => setCurrentView('map')} />
+        <EditProfile 
+          onBack={() => setCurrentView('map')} 
+          onLogout={() => setCurrentView('login')}
+        />
       )}
 
     </div>
