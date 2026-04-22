@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 // Make sure to match the stage ('/dev') used in your API Gateway
-const LOGIN_API = "https://123.amazon.com/LoginUser";
+const LOGIN_API = process.env.REACT_APP_LOGIN_API;
 
 export default function LoginPage({ onLoginSuccess, onShowRegister }) {
   const [email, setEmail] = useState("");
@@ -19,6 +19,12 @@ export default function LoginPage({ onLoginSuccess, onShowRegister }) {
     setErrorMsg("");
 
     try {
+      // Safety check: ensure the environment variable is actually loaded
+      if (!LOGIN_API) {
+        setErrorMsg("API URL is missing. Check your .env file and restart the server.");
+        return;
+      }
+
       const response = await fetch(LOGIN_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -38,7 +44,11 @@ export default function LoginPage({ onLoginSuccess, onShowRegister }) {
       }
     } catch (error) {
       console.error("Login Error:", error);
-      setErrorMsg("Failed to connect to the server.");
+      setErrorMsg(
+        error.message === "Failed to fetch" 
+          ? "Network error or CORS issue. Check the browser console." 
+          : "Failed to connect to the server."
+      );
     } finally {
       setIsLoading(false);
     }

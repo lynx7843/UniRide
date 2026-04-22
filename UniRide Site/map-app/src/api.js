@@ -16,9 +16,9 @@ export function loadRouteHistory(deviceId) {
 }
 
 // ─── AWS API endpoints ────────────────────────────────────────────────────────
-const LOCATION_API = 'https://123.amazon.com/dev/locations';
-const SHUTTLE_API  = 'https://123.amazon.com/dev/GetShuttles';
-const DRIVER_API   = 'https://123.amazon.com/dev/GetDrivers';
+const LOCATION_API = process.env.REACT_APP_LOCATION_API;
+const SHUTTLE_API  = process.env.REACT_APP_SHUTTLE_API;
+const DRIVER_API   = process.env.REACT_APP_DRIVER_API;
 
 // ─── GPSTrackerData: { deviceId (String), timestamp (Number/ms), lat, lng } ──
 // Returns array of latest-per-device records. Never throws.

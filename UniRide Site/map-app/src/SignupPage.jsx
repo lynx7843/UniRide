@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 // Update with your actual API Gateway URL if different
-const REGISTER_API = "https://123.amazon.com/RegisterUser";
+const REGISTER_API = process.env.REACT_APP_REGISTER_API;
 
 export default function SignupPage({ onClose, onShowLogin }) {
   const [name, setName] = useState("");
@@ -25,6 +25,12 @@ export default function SignupPage({ onClose, onShowLogin }) {
     const role = "student";
 
     try {
+      // Safety check: ensure the environment variable is actually loaded
+      if (!REGISTER_API) {
+        setErrorMsg("API URL is missing. Did you restart the server after updating .env?");
+        return;
+      }
+
       const response = await fetch(REGISTER_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,7 +54,11 @@ export default function SignupPage({ onClose, onShowLogin }) {
       }
     } catch (error) {
       console.error("Registration Error:", error);
-      setErrorMsg("Failed to connect to the server.");
+      setErrorMsg(
+        error.message === "Failed to fetch" 
+          ? "Network error or CORS issue. Check the browser console." 
+          : "Failed to connect to the server."
+      );
     } finally {
       setIsLoading(false);
     }

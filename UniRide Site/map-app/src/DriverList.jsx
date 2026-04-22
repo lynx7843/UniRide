@@ -16,8 +16,8 @@ export default function DriverList() {
       try {
         // Fetch both tables at the exact same time
         const [driversRes, shuttlesRes] = await Promise.all([
-          fetch("https://123.amazon.com/dev/GetDrivers"),
-          fetch("https://123.amazon.com/dev/GetShuttles")
+          fetch(process.env.REACT_APP_DRIVER_API),
+          fetch(process.env.REACT_APP_SHUTTLE_API)
         ]);
 
         const driversData = await driversRes.json();
@@ -65,9 +65,10 @@ export default function DriverList() {
         .app {
           position: absolute;
           right: 10px;
+          top: 10px;
           bottom: 10px;
           z-index: 1000;
-          width: auto;
+          width: 100%;
           max-width: 480px;
           display: flex;
           align-items: flex-start;
@@ -75,6 +76,7 @@ export default function DriverList() {
           background: transparent;
           padding: 0;
           font-family: 'DM Sans', sans-serif;
+          pointer-events: none;
         }
 
         .panel {
@@ -86,6 +88,25 @@ export default function DriverList() {
           background: #1a2830;
           border-radius: 20px;
           padding: 14px;
+          max-height: 100%;
+          overflow-y: auto;
+          pointer-events: auto;
+        }
+
+        /* Custom dark scrollbar for the panel */
+        .panel::-webkit-scrollbar {
+          width: 6px;
+        }
+        .panel::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+        .panel::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+        }
+        .panel::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
         }
 
         .card {

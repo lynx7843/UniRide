@@ -13,7 +13,7 @@ import RideCard from './RideCard';
 import DriverList from './DriverList';
 
 // ─── Direct API call — bypass api.js fetchLocationData so we can debug ────────
-const LOCATION_API = 'https://123.amazon.com/dev/locations';
+const LOCATION_API = process.env.REACT_APP_LOCATION_API;
 
 // Offline if last ping > 10 minutes ago (generous — tracker was 1.4h old in example)
 const OFFLINE_THRESHOLD_MS = 10 * 60 * 1000;
