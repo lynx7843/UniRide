@@ -48,13 +48,14 @@ function App() {
             user={currentUser}
             onProfileClick={() => setCurrentView('profile')}
           />
-          <MapComponent />
+          <MapComponent user={currentUser} />
         </SearchProvider>
       )}
 
       {/* Profile view triggered from navbar */}
       {currentView === 'profile' && (
         <EditProfile 
+          user={currentUser}
           onBack={() => setCurrentView('map')} 
           onLogout={() => setCurrentView('login')}
         />

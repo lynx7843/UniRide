@@ -90,7 +90,7 @@ function FitBounds({ coords, fitKey }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-const MapComponent = () => {
+const MapComponent = ({ user }) => {
   const { destination } = useSearch();
 
   const [vehicles, setVehicles]             = useState([]);
@@ -217,6 +217,7 @@ const MapComponent = () => {
       {selectedDeviceId && (
         <div style={{ position: 'absolute', bottom: 30, left: 30, zIndex: 1000 }}>
           <RideCard
+            user={user}
             driver={activeDriver}
             shuttle={activeShuttle}
             vehicle={activeTracker}

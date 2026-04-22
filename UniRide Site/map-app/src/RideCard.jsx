@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 
+const CREATE_BOOKING_API = process.env.REACT_APP_Create_Booking_API;
 const OFFLINE_THRESHOLD_MS = 5 * 60 * 1000;
 
 function isOffline(vehicle) {
@@ -145,9 +146,33 @@ const styles = `
   }
   .rc-status-ago.online  { color: #4ade80; }
   .rc-status-ago.offline { color: #fb923c; }
+
+  .rc-book-btn {
+    margin-top: 16px;
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    background: #4f7ef8;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .rc-book-btn:hover:not(:disabled) {
+    background: #3a69e8;
+    transform: translateY(-1px);
+  }
+  .rc-book-btn:disabled {
+    background: #b0bde8;
+    cursor: not-allowed;
+    opacity: 0.7;
+    transform: none;
+  }
 `;
 
-export default function RideCard({ driver, shuttle, vehicle, onClose }) {
+export default function RideCard({ user, driver, shuttle, vehicle, onClose }) {
   const offline = isOffline(vehicle);
 
   const dName    = driver?.driverName    || "Loading...";
@@ -160,6 +185,45 @@ export default function RideCard({ driver, shuttle, vehicle, onClose }) {
 
   const lastSeen = formatTimestamp(vehicle?.timestamp);
   const ago      = timeAgo(vehicle?.timestamp);
+
+  const [isBooking, setIsBooking] = useState(false);
+  const [isBooked, setIsBooked] = useState(false);
+
+  const handleBook = async () => {
+    if (!user?.userId) {
+      alert("Please log in to book a seat.");
+      return;
+    }
+    if (!shuttle?.shuttleId) {
+      alert("Cannot determine shuttle for booking.");
+      return;
+    }
+
+    const seatNumber = window.prompt(`Enter a seat number for shuttle to ${shuttle.destination} (1-${shuttle.capacity}):`);
+    if (!seatNumber) return;
+
+    setIsBooking(true);
+    try {
+      const response = await fetch(CREATE_BOOKING_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.userId,
+          shuttleId: shuttle.shuttleId,
+          date: new Date().toISOString().split("T")[0],
+          seatNumber: seatNumber,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Booking failed.");
+      alert(`Success! ${data.message}`);
+      setIsBooked(true);
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setIsBooking(false);
+    }
+  };
 
   return (
     <>
@@ -218,6 +282,14 @@ export default function RideCard({ driver, shuttle, vehicle, onClose }) {
             </span>
           )}
         </div>
+
+        <button
+          className="rc-book-btn"
+          onClick={handleBook}
+          disabled={isBooked || isBooking || offline}
+        >
+          {isBooked ? '✓ Booked' : isBooking ? 'Booking...' : 'Book This Ride'}
+        </button>
       </div>
     </>
   );
