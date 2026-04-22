@@ -1,233 +1,7 @@
 import { useState } from "react";
-
-const rides = [
-  { id: 1, date: "Oct 26, 2024", destination: "North Campus Library",     shuttleId: "SH-104", status: "Completed" },
-  { id: 2, date: "Oct 24, 2024", destination: "Student Union Building",   shuttleId: "SH-201", status: "Completed" },
-  { id: 3, date: "Oct 20, 2024", destination: "Downtown Transit Center",  shuttleId: "SH-104", status: "Completed" },
-  { id: 4, date: "Oct 15, 2024", destination: "West Campus Gym",          shuttleId: "SH-305", status: "Cancelled" },
-  { id: 5, date: "Oct 10, 2024", destination: "Main Hall",                shuttleId: "SH-102", status: "Completed" },
-];
-
-const upcomingBookings = [
-  {
-    id: 101,
-    destination: "To Campus Center",
-    dateTime: "Fri, Oct 27, 10:00 AM",
-    shuttle: "#42 (Blue Line)",
-    status: "Active",
-  },
-  {
-    id: 102,
-    destination: "From North Station",
-    dateTime: "Sat, Oct 28, 5:30 PM",
-    shuttle: "#15 (Red Line)",
-    status: "Active",
-  },
-];
-
-const scheduleShuttles = [
-  { id: 1, route: "Campus Center to North Station", time: "10:45 AM, Today", status: "On Time" },
-  { id: 2, route: "Campus Center to North Station", time: "11:00 AM, Today", status: "On Time" },
-  { id: 3, route: "Campus Center to North শেষে Station", time: "12:00 AM, Today", status: "On Time" },
-];
-
-const ROWS_PER_PAGE = 5;
-
-const historyStyles = {
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: "10px",
-    padding: "24px",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-    width: "100%",
-    maxWidth: "680px",
-  },
-  cardTitle: {
-    margin: "0 0 16px 0",
-    fontSize: "15px",
-    fontWeight: "700",
-    color: "#111827",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  th: {
-    textAlign: "left",
-    padding: "10px 12px",
-    fontSize: "13px",
-    fontWeight: "600",
-    color: "#374151",
-    borderBottom: "1px solid #e5e7eb",
-  },
-  tr: {
-    borderBottom: "1px solid #e5e7eb",
-  },
-  td: {
-    padding: "14px 12px",
-    fontSize: "14px",
-    color: "#374151",
-  },
-  badge: {
-    display: "inline-block",
-    padding: "3px 12px",
-    borderRadius: "999px",
-    fontSize: "13px",
-    fontWeight: "500",
-  },
-  badgeCompleted: {
-    backgroundColor: "#d1fae5",
-    color: "#065f46",
-  },
-  badgeCancelled: {
-    backgroundColor: "#fee2e2",
-    color: "#991b1b",
-  },
-  pagination: {
-    display: "flex",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    gap: "6px",
-    marginTop: "20px",
-  },
-  pageBtn: {
-    width: "32px",
-    height: "32px",
-    borderRadius: "6px",
-    border: "1px solid #d1d5db",
-    backgroundColor: "#ffffff",
-    color: "#374151",
-    fontSize: "14px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    lineHeight: 1,
-  },
-  pageBtnActive: {
-    backgroundColor: "#1e3a5f",
-    color: "#ffffff",
-    borderColor: "#1e3a5f",
-  },
-  bookingCard: {
-    border: "1px solid #e5e7eb",
-    borderRadius: "10px",
-    padding: "20px 24px",
-    marginBottom: "16px",
-  },
-  row: {
-    display: "flex",
-    marginBottom: "10px",
-    fontSize: "14px",
-  },
-  label: {
-    fontWeight: "600",
-    color: "#111827",
-    width: "130px",
-    flexShrink: 0,
-  },
-  value: {
-    color: "#374151",
-  },
-  cardActions: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: "10px",
-    marginTop: "16px",
-  },
-  cancelBtn: {
-    padding: "9px 20px",
-    borderRadius: "6px",
-    border: "1px solid #fca5a5",
-    backgroundColor: "#fef2f2",
-    color: "#991b1b",
-    fontSize: "13px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  editBtn: {
-    padding: "9px 20px",
-    borderRadius: "6px",
-    border: "none",
-    backgroundColor: "#3D2B8E",
-    color: "#ffffff",
-    fontSize: "13px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-};
-
-const scheduleStyles = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "16px",
-    width: "100%",
-    maxWidth: "680px",
-  },
-  welcomeCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: "12px",
-    padding: "36px 28px",
-    textAlign: "center",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-  },
-  welcomeTitle: {
-    margin: "0 0 8px 0",
-    fontSize: "22px",
-    fontWeight: "700",
-    color: "#111827",
-  },
-  welcomeSub: {
-    margin: 0,
-    fontSize: "13px",
-    color: "#6b7280",
-  },
-  shuttlesCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: "12px",
-    padding: "24px 28px",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-  },
-  shuttlesTitle: {
-    margin: "0 0 20px 0",
-    fontSize: "16px",
-    fontWeight: "700",
-    color: "#111827",
-  },
-  shuttleList: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  shuttleRow: {
-    display: "flex",
-    alignItems: "center",
-    backgroundColor: "#f5f6fb",
-    borderRadius: "10px",
-    padding: "14px 16px",
-    gap: "14px",
-  },
-  busIconWrap: {
-    width: "44px", height: "44px", borderRadius: "10px", backgroundColor: "#ede9fe",
-    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-  },
-  shuttleInfo: { display: "flex", flexDirection: "column", flex: 1, gap: "4px" },
-  shuttleRoute: { fontSize: "14px", fontWeight: "600", color: "#111827" },
-  shuttleMeta: { fontSize: "13px", color: "#6b7280", display: "flex", alignItems: "center", gap: "6px" },
-  divider: { color: "#d1d5db" },
-  onTime: { color: "#4f46e5", fontWeight: "500" },
-  bookBtn: {
-    padding: "7px 18px",
-    borderRadius: "7px",
-    border: "1px solid #d1d5db",
-    backgroundColor: "#ffffff",
-    color: "#111827",
-    fontSize: "13px",
-    fontWeight: "500",
-    cursor: "pointer",
-    flexShrink: 0,
-  },
-};
+import RideHistory from "./RideHistory";
+import EditBookings from "./EditBookings";
+import Schedule from "./Schedule";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -476,6 +250,13 @@ const styles = `
   .btn-primary:hover { background: var(--primary-dk); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(61,43,142,.45); }
   .btn-primary:active { transform: translateY(0); }
 
+  .btn-primary:disabled {
+    background: var(--muted);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
   /* TOAST */
   .toast {
     position: fixed;
@@ -511,7 +292,7 @@ const UserIcon = ({ size = 16 }) => (
 
 const ChevronIcon = ({ open }) => (
   <svg className={`nav-chevron ${open ? "open" : ""}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-    <polyline points="18 15 12 9 6 15"/>
+    <polyline points="6 9 12 15 18 9"/>
   </svg>
 );
 
@@ -543,33 +324,71 @@ const EditIcon = () => (
   </svg>
 );
 
-const BusIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="5" width="20" height="13" rx="2" />
-    <path d="M2 10h20" />
-    <circle cx="7" cy="18" r="1.5" />
-    <circle cx="17" cy="18" r="1.5" />
-    <path d="M6 5V3" />
-    <path d="M18 5V3" />
-  </svg>
-);
+const UPDATE_PROFILE_API = process.env.REACT_APP_Update_Profile_API || process.env.REACT_APP_UPDATE_PROFILE_API;
 
-export default function EditProfile({ onBack, onLogout }) {
+export default function EditProfile({ user, onBack, onLogout }) {
   const [profileOpen, setProfileOpen] = useState(true);
   const [bookingsOpen, setBookingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [toast, setToast] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "", userId: "" });
-
-  const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(rides.length / ROWS_PER_PAGE);
-  const pageRides = rides.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  
+  const [form, setForm] = useState({ 
+    name: user?.name || "", 
+    email: user?.email || "", 
+    phone: user?.phone || "",
+    address: user?.address || "",
+    currentPassword: "", 
+    newPassword: "", 
+    confirmPassword: "" 
+  });
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSave = () => {
-    setToast(true);
-    setTimeout(() => setToast(false), 2800);
+  const handleSave = async () => {
+    if (!form.currentPassword) {
+      setErrorMsg("Current password is required to save changes.");
+      return;
+    }
+    if (form.newPassword && form.newPassword !== form.confirmPassword) {
+      setErrorMsg("New passwords do not match.");
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      const response = await fetch(UPDATE_PROFILE_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          currentPassword: form.currentPassword,
+          name: form.name,
+          address: form.address,
+          phone: form.phone,
+          password: form.newPassword || form.currentPassword
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setToast(true);
+        setTimeout(() => setToast(false), 2800);
+        // Clear sensitive fields so they aren't left filled
+        setForm(prev => ({ ...prev, currentPassword: "", newPassword: "", confirmPassword: "" }));
+      } else {
+        setErrorMsg(data.message || "Failed to update profile.");
+      }
+    } catch (error) {
+      console.error("Profile Update Error:", error);
+      setErrorMsg("Failed to connect to the server.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -663,12 +482,17 @@ export default function EditProfile({ onBack, onLogout }) {
                 </div>
               </div>
 
+              {errorMsg && <div style={{ color: "#DC2626", marginBottom: "16px", fontSize: "14px", fontWeight: "600", textAlign: "center" }}>{errorMsg}</div>}
+
               {/* Fields */}
               {[
-                { label: "Name",     name: "name",     type: "text",     placeholder: "Enter your full name" },
-                { label: "Email",    name: "email",    type: "email",    placeholder: "name@example.com" },
-                { label: "Password", name: "password", type: "password", placeholder: "••••••••••" },
-                { label: "Role",     name: "role",     type: "text",     placeholder: "Enter your role" },
+                { label: "Name", name: "name", type: "text", placeholder: "Enter your full name" },
+                { label: "Email", name: "email", type: "email", placeholder: "name@example.com", readOnly: true },
+                { label: "Phone Number", name: "phone", type: "tel", placeholder: "Enter your phone number" },
+                { label: "Address", name: "address", type: "text", placeholder: "Enter your address" },
+                { label: "Current Password (Required)", name: "currentPassword", type: "password", placeholder: "••••••••••" },
+                { label: "New Password (Optional)", name: "newPassword", type: "password", placeholder: "••••••••••" },
+                { label: "Confirm New Password", name: "confirmPassword", type: "password", placeholder: "••••••••••" },
               ].map(f => (
                 <div className="field" key={f.name}>
                   <label htmlFor={f.name}>{f.label}</label>
@@ -679,6 +503,8 @@ export default function EditProfile({ onBack, onLogout }) {
                     placeholder={f.placeholder}
                     value={form[f.name]}
                     onChange={handleChange}
+                    readOnly={f.readOnly}
+                    style={f.readOnly ? { backgroundColor: "#E2E8F0", color: "#64748B", cursor: "not-allowed" } : {}}
                   />
                 </div>
               ))}
@@ -686,148 +512,21 @@ export default function EditProfile({ onBack, onLogout }) {
               {/* Actions */}
               <div className="actions">
                 <button className="btn btn-outline" onClick={onBack}>Back to Home</button>
-                <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>
+                <button className="btn btn-primary" onClick={handleSave} disabled={isLoading}>
+                  {isLoading ? "Saving..." : "Save Changes"}
+                </button>
               </div>
               </div>
             )}
 
             {/* Ride History Tab */}
-            {activeTab === "history" && (
-              <div style={historyStyles.card}>
-                <h2 style={historyStyles.cardTitle}>Past Travels</h2>
+            {activeTab === "history" && <RideHistory user={user} />}
 
-                {/* Table */}
-                <table style={historyStyles.table}>
-                  <thead>
-                    <tr>
-                      {["Date", "Destination", "Shuttle ID", "Status"].map((col) => (
-                        <th key={col} style={historyStyles.th}>{col}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pageRides.map((ride, i) => (
-                      <tr
-                        key={ride.id}
-                        style={{
-                          ...historyStyles.tr,
-                          borderTop: i === 0 ? "1px solid #e5e7eb" : undefined,
-                        }}
-                      >
-                        <td style={historyStyles.td}>{ride.date}</td>
-                        <td style={historyStyles.td}>{ride.destination}</td>
-                        <td style={historyStyles.td}>{ride.shuttleId}</td>
-                        <td style={historyStyles.td}>
-                          <span
-                            style={{
-                              ...historyStyles.badge,
-                              ...(ride.status === "Completed"
-                                ? historyStyles.badgeCompleted
-                                : historyStyles.badgeCancelled),
-                            }}
-                          >
-                            {ride.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Pagination */}
-                <div style={historyStyles.pagination}>
-                  <button
-                    style={historyStyles.pageBtn}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                  >
-                    ‹
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      style={{
-                        ...historyStyles.pageBtn,
-                        ...(p === page ? historyStyles.pageBtnActive : {}),
-                      }}
-                      onClick={() => setPage(p)}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                  <button
-                    style={historyStyles.pageBtn}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Edit Bookings Tab (Empty for now) */}
-            {activeTab === "bookings" && (
-              <div style={historyStyles.card}>
-                <h2 style={historyStyles.cardTitle}>Edit Bookings</h2>
-                
-                {upcomingBookings.map((booking) => (
-                  <div key={booking.id} style={historyStyles.bookingCard}>
-                    <div style={historyStyles.row}>
-                      <span style={historyStyles.label}>Destination:</span>
-                      <span style={historyStyles.value}>{booking.destination}</span>
-                    </div>
-                    <div style={historyStyles.row}>
-                      <span style={historyStyles.label}>Date & Time:</span>
-                      <span style={historyStyles.value}>{booking.dateTime}</span>
-                    </div>
-                    <div style={historyStyles.row}>
-                      <span style={historyStyles.label}>Shuttle:</span>
-                      <span style={historyStyles.value}>{booking.shuttle}</span>
-                    </div>
-                    <div style={historyStyles.row}>
-                      <span style={historyStyles.label}>Status:</span>
-                      <span style={historyStyles.value}>{booking.status}</span>
-                    </div>
-
-                    <div style={historyStyles.cardActions}>
-                      <button style={historyStyles.cancelBtn}>Cancel</button>
-                      <button style={historyStyles.editBtn}>Reschedule</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Edit Bookings Tab */}
+            {activeTab === "bookings" && <EditBookings user={user} />}
 
             {/* Schedule Tab */}
-            {activeTab === "schedule" && (
-              <div style={scheduleStyles.container}>
-                <div style={scheduleStyles.welcomeCard}>
-                  <h2 style={scheduleStyles.welcomeTitle}>Welcome back, Alex!</h2>
-                  <p style={scheduleStyles.welcomeSub}>Here's a quick overview of your upcoming shuttle rides.</p>
-                </div>
-
-                <div style={scheduleStyles.shuttlesCard}>
-                  <h3 style={scheduleStyles.shuttlesTitle}>Upcoming Shuttles</h3>
-                  <div style={scheduleStyles.shuttleList}>
-                    {scheduleShuttles.map((shuttle, i) => (
-                      <div key={shuttle.id} style={{ ...scheduleStyles.shuttleRow, marginTop: i === 0 ? 0 : "12px" }}>
-                        <div style={scheduleStyles.busIconWrap}><BusIcon /></div>
-                        <div style={scheduleStyles.shuttleInfo}>
-                          <span style={scheduleStyles.shuttleRoute}>{shuttle.route}</span>
-                          <span style={scheduleStyles.shuttleMeta}>
-                            {shuttle.time}
-                            <span style={scheduleStyles.divider}>|</span>
-                            <span style={scheduleStyles.onTime}>{shuttle.status}</span>
-                          </span>
-                        </div>
-                        <button style={scheduleStyles.bookBtn}>Book</button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+            {activeTab === "schedule" && <Schedule user={user} />}
           </div>
         </div>
 
