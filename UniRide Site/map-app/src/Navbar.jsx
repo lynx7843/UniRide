@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearch } from "./SearchContext";
 
 const styles = `
@@ -281,6 +281,22 @@ function Avatar({ src, alt }) {
 export default function Navbar({ user, onProfileClick }) {
   const [query, setQuery] = useState("");
   const { destination, searching, searchError, search, clearDestination } = useSearch();
+  const [fetchedDriverName, setFetchedDriverName] = useState("");
+
+  useEffect(() => {
+    // If the logged-in user is a driver, dynamically fetch their details to grab their specific driverName
+    if (user?.role === "driver" || user?.driverId) {
+      fetch(process.env.REACT_APP_DRIVER_API)
+        .then((res) => res.json())
+        .then((data) => {
+          const driver = data.find((d) => d.email === user?.email || d.driverId === user?.driverId);
+          if (driver && driver.driverName) {
+            setFetchedDriverName(driver.driverName);
+          }
+        })
+        .catch((err) => console.error("Failed to fetch driver details:", err));
+    }
+  }, [user]);
 
   const handleSearch = () => {
     if (query.trim()) search(query.trim());
@@ -294,6 +310,9 @@ export default function Navbar({ user, onProfileClick }) {
     setQuery("");
     clearDestination();
   };
+
+  // Priority: 1. API Fetched Name 2. Local driverName 3. Local student name 4. Default
+  const displayName = fetchedDriverName || user?.driverName || user?.name || "John Doe";
 
   return (
     <>
@@ -364,8 +383,8 @@ export default function Navbar({ user, onProfileClick }) {
           </div>
 
           <div className="navbar__profile" onClick={onProfileClick}>
-            <Avatar src={user?.avatar || "src/prof.png"} alt={user?.name || "User"} />
-            <span className="navbar__name">{user?.name || "John Doe"}</span>
+            <Avatar src={user?.avatar || "src/prof.png"} alt={displayName} />
+            <span className="navbar__name">{displayName}</span>
             <span className="navbar__chevron">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9"/>
