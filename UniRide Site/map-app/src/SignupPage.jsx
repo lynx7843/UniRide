@@ -7,6 +7,8 @@ export default function SignupPage({ onClose, onShowLogin }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [focused, setFocused] = useState(null);
   const [showPass, setShowPass] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -22,7 +24,6 @@ export default function SignupPage({ onClose, onShowLogin }) {
 
     // Automatically generate a student ID for this example
     const generatedUserId = "STU-" + Math.floor(1000 + Math.random() * 9000);
-    const role = "student";
 
     try {
       // Safety check: ensure the environment variable is actually loaded
@@ -39,7 +40,8 @@ export default function SignupPage({ onClose, onShowLogin }) {
           password: password,
           name: name,
           userId: generatedUserId,
-          role: role
+          phone: phone,
+          address: address
         }),
       });
 
@@ -374,6 +376,36 @@ export default function SignupPage({ onClose, onShowLogin }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onFocus={() => setFocused("email")}
+              onBlur={() => setFocused(null)}
+              required
+            />
+          </div>
+
+          {/* Phone Number */}
+          <div className="input-wrap">
+            <label className={`input-label${focused === "phone" ? " focused" : ""}`}>Phone Number</label>
+            <input
+              className="input-field"
+              type="tel"
+              placeholder="07xxxxxxxx"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onFocus={() => setFocused("phone")}
+              onBlur={() => setFocused(null)}
+              required
+            />
+          </div>
+
+          {/* Address */}
+          <div className="input-wrap">
+            <label className={`input-label${focused === "address" ? " focused" : ""}`}>Address</label>
+            <input
+              className="input-field"
+              type="text"
+              placeholder="e.g. 123 Main St, City"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              onFocus={() => setFocused("address")}
               onBlur={() => setFocused(null)}
               required
             />

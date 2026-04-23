@@ -36,7 +36,8 @@ export default function LoginPage({ onLoginSuccess, onShowRegister }) {
       if (response.ok) {
         // Pass the user data back to App.js so it can show the map
         if (onLoginSuccess) {
-          onLoginSuccess(data.userData); 
+          // Append the role from the Lambda response so the app knows who logged in
+          onLoginSuccess({ ...data.userData, role: data.role }); 
         }
       } else {
         // Display the 401 Unauthorized message from your Lambda

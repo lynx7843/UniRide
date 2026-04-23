@@ -185,6 +185,8 @@ export default function RideCard({ user, driver, shuttle, vehicle, onClose }) {
 
   const lastSeen = formatTimestamp(vehicle?.timestamp);
   const ago      = timeAgo(vehicle?.timestamp);
+  
+  const isStaffOrDriver = user?.role === "admin" || user?.role === "driver";
 
   const [isBooking, setIsBooking] = useState(false);
   const [isBooked, setIsBooked] = useState(false);
@@ -283,13 +285,15 @@ export default function RideCard({ user, driver, shuttle, vehicle, onClose }) {
           )}
         </div>
 
-        <button
-          className="rc-book-btn"
-          onClick={handleBook}
-          disabled={isBooked || isBooking || offline}
-        >
-          {isBooked ? '✓ Booked' : isBooking ? 'Booking...' : 'Book This Ride'}
-        </button>
+        {!isStaffOrDriver && (
+          <button
+            className="rc-book-btn"
+            onClick={handleBook}
+            disabled={isBooked || isBooking || offline}
+          >
+            {isBooked ? '✓ Booked' : isBooking ? 'Booking...' : 'Book This Ride'}
+          </button>
+        )}
       </div>
     </>
   );

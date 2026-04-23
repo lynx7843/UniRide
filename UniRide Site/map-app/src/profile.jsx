@@ -2,6 +2,10 @@ import { useState } from "react";
 import RideHistory from "./RideHistory";
 import EditBookings from "./EditBookings";
 import Schedule from "./Schedule";
+import AdminCreateStudentAccount from "./CreateStudentAccount";
+import AdminCreateDriverAccount from "./CreateDriverAccount";
+import AdminRegisterNewShuttle from "./RegisterNewShuttle";
+import AdminRegisterFingerprint from "./RegisterFingerprint";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -324,12 +328,36 @@ const EditIcon = () => (
   </svg>
 );
 
+const BusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="5" width="20" height="13" rx="2" />
+    <path d="M2 10h20" />
+    <circle cx="7" cy="18" r="1.5" />
+    <circle cx="17" cy="18" r="1.5" />
+    <path d="M6 5V3" />
+    <path d="M18 5V3" />
+  </svg>
+);
+
+const FingerprintIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/>
+    <path d="M5 19.5A9 9 0 0 1 12 5a9 9 0 0 1 7 4"/>
+    <path d="M10 19.5c0-1.5 1-2.5 2-2.5s2 1 2 2.5"/>
+    <path d="M7 16.5c0-1.5 1-2.5 2-2.5s2 1 2 2.5"/>
+    <path d="M12 14c-1 0-1.5.5-1.5 1.5"/>
+  </svg>
+);
+
 const UPDATE_PROFILE_API = process.env.REACT_APP_Update_Profile_API || process.env.REACT_APP_UPDATE_PROFILE_API;
 
 export default function EditProfile({ user, onBack, onLogout }) {
-  const [profileOpen, setProfileOpen] = useState(true);
+  const isStaffOrDriver = user?.role === "admin" || user?.role === "driver";
+  
+  const [profileOpen, setProfileOpen] = useState(!isStaffOrDriver);
   const [bookingsOpen, setBookingsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(isStaffOrDriver ? "schedule" : "profile");
   const [toast, setToast] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -403,40 +431,82 @@ export default function EditProfile({ user, onBack, onLogout }) {
           <nav className="sidebar-nav">
             <button className="nav-item" onClick={onBack}><MapIcon /> Map</button>
 
-            <button className="nav-item parent" onClick={() => setProfileOpen(o => !o)}>
-              <UserIcon /> Profile <ChevronIcon open={profileOpen} />
-            </button>
-
-            {profileOpen && (
-              <div className="nav-child">
-                <button 
-                  className={`nav-item ${activeTab === "profile" ? "active" : ""}`} 
-                  onClick={() => setActiveTab("profile")}
-                >
-                  <UserIcon /> Edit Profile
+            {!isStaffOrDriver && (
+              <>
+                <button className="nav-item parent" onClick={() => setProfileOpen(o => !o)}>
+                  <UserIcon /> Profile <ChevronIcon open={profileOpen} />
                 </button>
-              </div>
+
+                {profileOpen && (
+                  <div className="nav-child">
+                    <button 
+                      className={`nav-item ${activeTab === "profile" ? "active" : ""}`} 
+                      onClick={() => setActiveTab("profile")}
+                    >
+                      <UserIcon /> Edit Profile
+                    </button>
+                  </div>
+                )}
+
+                <button className="nav-item parent" onClick={() => setBookingsOpen(o => !o)}>
+                  <BookingsIcon /> Bookings <ChevronIcon open={bookingsOpen} />
+                </button>
+
+                {bookingsOpen && (
+                  <div className="nav-child">
+                    <button 
+                      className={`nav-item ${activeTab === "history" ? "active" : ""}`} 
+                      onClick={() => setActiveTab("history")}
+                    >
+                      <BookingsIcon /> Ride History
+                    </button>
+                    <button 
+                      className={`nav-item ${activeTab === "bookings" ? "active" : ""}`} 
+                      onClick={() => setActiveTab("bookings")}
+                    >
+                      <BookingsIcon /> Edit bookings
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
-            <button className="nav-item parent" onClick={() => setBookingsOpen(o => !o)}>
-              <BookingsIcon /> Bookings <ChevronIcon open={bookingsOpen} />
-            </button>
+            {user?.role === "admin" && (
+              <>
+                <button className="nav-item parent" onClick={() => setCreateUserOpen(o => !o)}>
+                  <UserIcon /> Create User <ChevronIcon open={createUserOpen} />
+                </button>
 
-            {bookingsOpen && (
-              <div className="nav-child">
-                <button 
-                  className={`nav-item ${activeTab === "history" ? "active" : ""}`} 
-                  onClick={() => setActiveTab("history")}
+                {createUserOpen && (
+                  <div className="nav-child">
+                    <button 
+                      className={`nav-item ${activeTab === "createStudent" ? "active" : ""}`} 
+                      onClick={() => setActiveTab("createStudent")}
+                    >
+                      <UserIcon /> Student
+                    </button>
+                    <button 
+                      className={`nav-item ${activeTab === "createDriver" ? "active" : ""}`} 
+                      onClick={() => setActiveTab("createDriver")}
+                    >
+                      <UserIcon /> Driver
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  className={`nav-item ${activeTab === "addShuttle" ? "active" : ""}`}
+                  onClick={() => setActiveTab("addShuttle")}
                 >
-                  <BookingsIcon /> Ride History
+                  <BusIcon /> Add Shuttle
                 </button>
-                <button 
-                  className={`nav-item ${activeTab === "bookings" ? "active" : ""}`} 
-                  onClick={() => setActiveTab("bookings")}
+                <button
+                  className={`nav-item ${activeTab === "registerFingerprint" ? "active" : ""}`}
+                  onClick={() => setActiveTab("registerFingerprint")}
                 >
-                  <BookingsIcon /> Edit bookings
+                  <FingerprintIcon /> Register Fingerprint
                 </button>
-              </div>
+              </>
             )}
 
             <button 
@@ -462,6 +532,10 @@ export default function EditProfile({ user, onBack, onLogout }) {
               {activeTab === "history" && "Ride History"}
               {activeTab === "bookings" && "Edit Bookings"}
               {activeTab === "schedule" && "Schedule"}
+              {activeTab === "createStudent" && "Create Student"}
+              {activeTab === "createDriver" && "Create Driver"}
+              {activeTab === "addShuttle" && "Add New Shuttle"}
+              {activeTab === "registerFingerprint" && "Register Fingerprint"}
             </span>
             <div className="avatar-btn"><UserIcon size={20} /></div>
           </header>
@@ -470,7 +544,7 @@ export default function EditProfile({ user, onBack, onLogout }) {
           <div className="content">
             
             {/* Edit Profile Tab */}
-            {activeTab === "profile" && (
+            {!isStaffOrDriver && activeTab === "profile" && (
               <div className="card">
               {/* Avatar */}
               <div className="avatar-wrap">
@@ -520,13 +594,25 @@ export default function EditProfile({ user, onBack, onLogout }) {
             )}
 
             {/* Ride History Tab */}
-            {activeTab === "history" && <RideHistory user={user} />}
+            {!isStaffOrDriver && activeTab === "history" && <RideHistory user={user} />}
 
             {/* Edit Bookings Tab */}
-            {activeTab === "bookings" && <EditBookings user={user} />}
+            {!isStaffOrDriver && activeTab === "bookings" && <EditBookings user={user} />}
 
             {/* Schedule Tab */}
             {activeTab === "schedule" && <Schedule user={user} />}
+
+            {/* Create Student Tab */}
+            {user?.role === "admin" && activeTab === "createStudent" && <AdminCreateStudentAccount />}
+
+            {/* Create Driver Tab */}
+            {user?.role === "admin" && activeTab === "createDriver" && <AdminCreateDriverAccount />}
+
+            {/* Add Shuttle Tab */}
+            {user?.role === "admin" && activeTab === "addShuttle" && <AdminRegisterNewShuttle />}
+
+            {/* Register Fingerprint Tab */}
+            {user?.role === "admin" && activeTab === "registerFingerprint" && <AdminRegisterFingerprint />}
           </div>
         </div>
 

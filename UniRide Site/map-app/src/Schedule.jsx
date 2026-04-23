@@ -94,6 +94,8 @@ const BusIcon = () => (
 );
 
 export default function Schedule({ user }) {
+  const isStaffOrDriver = user?.role === "admin" || user?.role === "driver";
+
   const [shuttles, setShuttles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -197,16 +199,18 @@ export default function Schedule({ user }) {
                     <span style={scheduleStyles.onTime}>{shuttle.status}</span>
                   </span>
                 </div>
-                <button
-                  style={{
-                    ...scheduleStyles.bookBtn,
-                    ...(bookingState.loadingId === shuttle.shuttleId ? scheduleStyles.bookBtnDisabled : {}),
-                  }}
-                  onClick={() => handleBook(shuttle)}
-                  disabled={bookingState.loadingId === shuttle.shuttleId}
-                >
-                  {bookingState.loadingId === shuttle.shuttleId ? "Booking..." : "Book"}
-                </button>
+                {!isStaffOrDriver && (
+                  <button
+                    style={{
+                      ...scheduleStyles.bookBtn,
+                      ...(bookingState.loadingId === shuttle.shuttleId ? scheduleStyles.bookBtnDisabled : {}),
+                    }}
+                    onClick={() => handleBook(shuttle)}
+                    disabled={bookingState.loadingId === shuttle.shuttleId}
+                  >
+                    {bookingState.loadingId === shuttle.shuttleId ? "Booking..." : "Book"}
+                  </button>
+                )}
               </div>
             ))}
           </div>

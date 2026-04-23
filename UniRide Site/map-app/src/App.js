@@ -17,7 +17,17 @@ function App() {
   // Helper function to handle successful login
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
-    setCurrentView('map');
+    
+    // State check to route the user depending on their role
+    if (userData.role === 'admin') {
+      console.log("Staff logged in!");
+      setCurrentView('map'); // TODO: Update this to 'adminDashboard' when ready
+    } else if (userData.role === 'driver') {
+      console.log("Driver logged in!");
+      setCurrentView('map'); // TODO: Update this to 'driverDashboard' when ready
+    } else {
+      setCurrentView('map'); // Default student view
+    }
   };
 
   return (
