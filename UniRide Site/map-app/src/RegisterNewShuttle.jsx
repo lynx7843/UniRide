@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+const REGISTER_SHUTTLE_API = process.env.REACT_APP_REGISTER_SHUTTLE_API;
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
@@ -85,6 +87,14 @@ const styles = `
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(61, 45, 181, 0.25);
   }
+
+  .msg-banner {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    text-align: center;
+  }
 `;
 
 export default function AdminRegisterNewShuttle() {
@@ -93,10 +103,44 @@ export default function AdminRegisterNewShuttle() {
   const [deviceId, setDeviceId] = useState("");
   const [driverId, setDriverId] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
-  const [phone, setPhone] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState({ text: "", type: "" });
 
-  const handleRegister = () => {
-    console.log("Registering shuttle:", { capacity, destination, deviceId, driverId, vehicleNumber, phone });
+  const handleRegister = async () => {
+    setIsLoading(true);
+    setMessage({ text: "", type: "" });
+
+    if (!REGISTER_SHUTTLE_API) {
+      setMessage({ text: "API URL is missing. Check your .env file.", type: "error" });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(REGISTER_SHUTTLE_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ capacity, destination, deviceId, driverId, vehicleNumber }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ text: data.message || "Shuttle registered successfully!", type: "success" });
+        setCapacity("");
+        setDestination("");
+        setDeviceId("");
+        setDriverId("");
+        setVehicleNumber("");
+      } else {
+        setMessage({ text: data.message || "Failed to register shuttle.", type: "error" });
+      }
+    } catch (error) {
+      console.error("Error registering shuttle:", error);
+      setMessage({ text: "Failed to connect to the server.", type: "error" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -104,6 +148,17 @@ export default function AdminRegisterNewShuttle() {
       <style>{styles}</style>
       <div className="card">
         <h2 className="card-title">Register New Shuttle</h2>
+
+            {message.text && (
+              <div className="msg-banner" style={{ 
+                backgroundColor: message.type === "success" ? "#d1fae5" : "#fee2e2", 
+                color: message.type === "success" ? "#065f46" : "#991b1b",
+                border: `1px solid ${message.type === "success" ? "#a7f3d0" : "#fecaca"}`
+              }}>
+                {message.text}
+              </div>
+            )}
+
             <div className="field-group">
               <label className="field-label">Capacity</label>
               <input
@@ -159,20 +214,9 @@ export default function AdminRegisterNewShuttle() {
               />
             </div>
 
-            <div className="field-group">
-              <label className="field-label">Phone</label>
-              <input
-                className="text-input"
-                type="tel"
-                placeholder="Enter contact number"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-
             <div className="actions">
-              <button className="btn-register" onClick={handleRegister}>
-                Register Shuttle
+              <button className="btn-register" onClick={handleRegister} disabled={isLoading}>
+                {isLoading ? "Registering..." : "Register Shuttle"}
               </button>
             </div>
       </div>
