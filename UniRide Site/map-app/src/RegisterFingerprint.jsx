@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+const REGISTER_FINGERPRINT_API = process.env.REACT_APP_RegisterFingerprint_API || process.env.REACT_APP_REGISTER_FINGERPRINT_API;
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
@@ -110,14 +112,54 @@ const styles = `
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(61, 45, 181, 0.25);
   }
+
+  .msg-banner {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    text-align: center;
+  }
 `;
 
 export default function AdminRegisterFingerprint() {
   const [driverId, setDriverId] = useState("");
   const [metadata, setMetadata] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState({ text: "", type: "" });
 
-  const handleRegister = () => {
-    console.log("Registering fingerprint:", { driverId, metadata });
+  const handleRegister = async () => {
+    setIsLoading(true);
+    setMessage({ text: "", type: "" });
+
+    if (!REGISTER_FINGERPRINT_API) {
+      setMessage({ text: "API URL is missing. Check your .env file.", type: "error" });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(REGISTER_FINGERPRINT_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ driverId, templateData: metadata }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ text: data.message || "Fingerprint registered successfully!", type: "success" });
+        setDriverId("");
+        setMetadata("");
+      } else {
+        setMessage({ text: data.message || "Failed to register fingerprint.", type: "error" });
+      }
+    } catch (error) {
+      console.error("Error registering fingerprint:", error);
+      setMessage({ text: "Failed to connect to the server.", type: "error" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -125,6 +167,17 @@ export default function AdminRegisterFingerprint() {
       <style>{styles}</style>
       <div className="card">
         <h2 className="card-title">Register Driver Fingerprint</h2>
+
+            {message.text && (
+              <div className="msg-banner" style={{ 
+                backgroundColor: message.type === "success" ? "#d1fae5" : "#fee2e2", 
+                color: message.type === "success" ? "#065f46" : "#991b1b",
+                border: `1px solid ${message.type === "success" ? "#a7f3d0" : "#fecaca"}`
+              }}>
+                {message.text}
+              </div>
+            )}
+
             <div className="field-group">
               <label className="field-label">Driver ID</label>
               <input
@@ -147,8 +200,8 @@ export default function AdminRegisterFingerprint() {
             </div>
 
             <div className="actions">
-              <button className="btn-register" onClick={handleRegister}>
-                Register Fingerprint
+              <button className="btn-register" onClick={handleRegister} disabled={isLoading}>
+                {isLoading ? "Registering..." : "Register Fingerprint"}
               </button>
             </div>
       </div>

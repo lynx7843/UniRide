@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+const REGISTER_DRIVER_API = process.env.REACT_APP_REGISTER_DRIVER_API;
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
@@ -94,6 +96,14 @@ const styles = `
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(61, 45, 181, 0.25);
   }
+
+  .msg-banner {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    text-align: center;
+  }
 `;
 
 export default function AdminCreateDriverAccount() {
@@ -103,9 +113,46 @@ export default function AdminCreateDriverAccount() {
   const [nic, setNic] = useState("");
   const [password, setPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState({ text: "", type: "" });
 
-  const handleCreate = () => {
-    console.log("Creating driver account:", { driverName, email, licenseNumber, nic, password, phoneNumber });
+  const handleCreate = async () => {
+    setIsLoading(true);
+    setMessage({ text: "", type: "" });
+
+    if (!REGISTER_DRIVER_API) {
+      setMessage({ text: "API URL is missing. Check your .env file.", type: "error" });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(REGISTER_DRIVER_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ driverName, email, licenseNumber, nic, password, phoneNumber }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ text: data.message || "Driver created successfully!", type: "success" });
+        // Clear the form after successful creation
+        setDriverName("");
+        setEmail("");
+        setLicenseNumber("");
+        setNic("");
+        setPassword("");
+        setPhoneNumber("");
+      } else {
+        setMessage({ text: data.message || "Failed to create driver.", type: "error" });
+      }
+    } catch (error) {
+      console.error("Error creating driver:", error);
+      setMessage({ text: "Failed to connect to the server.", type: "error" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -119,6 +166,16 @@ export default function AdminCreateDriverAccount() {
                 </svg>
               </div>
             </div>
+
+            {message.text && (
+              <div className="msg-banner" style={{ 
+                backgroundColor: message.type === "success" ? "#d1fae5" : "#fee2e2", 
+                color: message.type === "success" ? "#065f46" : "#991b1b",
+                border: `1px solid ${message.type === "success" ? "#a7f3d0" : "#fecaca"}`
+              }}>
+                {message.text}
+              </div>
+            )}
 
             <div className="field-group">
               <label className="field-label">Driver Name</label>
@@ -187,8 +244,8 @@ export default function AdminCreateDriverAccount() {
             </div>
 
             <div className="actions">
-              <button className="btn-create" onClick={handleCreate}>
-                Create Driver
+              <button className="btn-create" onClick={handleCreate} disabled={isLoading}>
+                {isLoading ? "Creating..." : "Create Driver"}
               </button>
             </div>
           </div>
