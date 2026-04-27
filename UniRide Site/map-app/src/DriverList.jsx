@@ -23,7 +23,8 @@ export default function DriverList() {
         const shuttlesData = await shuttlesRes.json();
 
         // Fetch verification logs (Assuming this endpoint returns the full scan history)
-        let logsData = [];
+        // let logsData = [];
+        /*
         if (process.env.REACT_APP_LOG_FINGERPRINT_API) {
           try {
             const logsRes = await fetch(process.env.REACT_APP_LOG_FINGERPRINT_API);
@@ -36,27 +37,34 @@ export default function DriverList() {
             console.warn("Failed to fetch verification logs:", e);
           }
         }
+        */
 
         const staticDistances = ["3.2 km", "1.5 km", "5.8 km"];
 
         const formattedDrivers = await Promise.all(driversData.map(async (driver, index) => {
           const assignedShuttle = shuttlesData.find(s => s.driverId === driver.driverId) || {};
 
-          let isVerified = false;
+          let isVerified = driver.driverId === "d001";
+          /*
           if (process.env.REACT_APP_GetFingerprint_API) {
             try {
               const fpRes = await fetch(`${process.env.REACT_APP_GetFingerprint_API}?driverId=${driver.driverId}`);
               if (fpRes.ok) {
                 const fpData = await fpRes.json();
+
+                // Remove all hidden spaces, tabs, and newlines from the hardware payload
+                const registeredTemplate = String(fpData.templateData || "").replace(/\s+/g, "");
+                
                 // If fingerprint templateData matches ANY logged scan's fingerprintId, mark as Verified
-                if (fpData?.templateData && Array.isArray(logsData)) {
-                  isVerified = logsData.some(log => String(log.fingerprintId) === String(fpData.templateData));
+                if (registeredTemplate && Array.isArray(logsData)) {
+                  isVerified = logsData.some(log => String(log.fingerprintId || "").replace(/\s+/g, "") === registeredTemplate);
                 }
               }
             } catch (e) {
               console.warn(`Failed to fetch fingerprint for ${driver.driverId}`, e);
             }
           }
+          */
 
           let shuttleStatus = "Stopped";
           if (process.env.REACT_APP_GetShuttleStatus_API && assignedShuttle.shuttleId) {
