@@ -1,8 +1,8 @@
 #include <WiFi.h>
 
 // Replace with your Wi-Fi credentials
-const char* ssid = "";
-const char* password = "";
+const char* ssid = "Hydra's S26 Ultra";
+const char* password = "vc78ezz567";
 
 void setup() {
   Serial.begin(115200);
