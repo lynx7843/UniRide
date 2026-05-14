@@ -13,15 +13,17 @@ University transportation can be unpredictable—late buses, unclear routes, and
 - Mobile + Web access for convenience  
 
 The system uses a **simple GPS tracking module built with Arduino** to track university buses and display live location data to students.
+GPS module hardware schematics and AWS configuration can be found on **UniRide AWS Config** Repository.
 
 ### 🔗 Repositories
 | Project | Repository |
 |---|---|
 |  UniRide Mobile | [lynx7843/UniRide_mobile](https://github.com/lynx7843/UniRide_mobile) |
 |  UniRide Client | [lynx7843/UniRide_client](https://github.com/lynx7843/UniRide_client) |
+|  UniRide AWS Config | [lynx7843/UniRide_client](https://github.com/lynx7843/UniRide_AWS_Config) |
 
 ## ✨ Key Features
-### Bus Tracking
+### Shuttle Tracking
 - Real-time bus location tracking
 - GPS data collected via Arduino-based tracker
 - Live updates on both mobile and web apps
@@ -33,7 +35,7 @@ The system uses a **simple GPS tracking module built with Arduino** to track uni
 - Driver name and contact details
 - Helps students identify the correct bus easily
 ### Mobile Application (Flutter)
-- Android & iOS support
+- Android support
 - Student-friendly UI
 - Optimized for low data usage
 ### Web Application (React)
@@ -55,7 +57,13 @@ The system uses a **simple GPS tracking module built with Arduino** to track uni
 ## 🚀 Getting Started
 ### Mobile App (Flutter)
 ````bash
-cd uniride-app
+cd UniRide_mobile
+flutter pub get
+flutter run
+````
+### Driver Mobile App (Flutter)
+````bash
+cd UniRide_client
 flutter pub get
 flutter run
 ````
@@ -66,11 +74,11 @@ npm install
 npm start
 ````
 ### Arduino GPS Tracker
-1. Upload the Arduino code from `/ESP32 Code`
+1. Upload the Arduino code to `/ESP32 Code`
 2. Connect the GPS module
 3. Ensure serial/GSM/WiFi communication is active
-4. Start sending GPS coordinates to the server
-5. Additional testing codes are also provided for testing
+4. Test whether the GPS coordinates are sending to the server
+5. Additional testing codes are also provided for testing and debugging
 ## 🎯 Target Users
 * University students
 * University transport administrators
