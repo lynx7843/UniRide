@@ -1,9 +1,15 @@
 <div align="center">
-# 🚍 UniRide  
-### Smart Travel Companion for University Students
-**UniRide** is a cross-platform travel management system designed specifically for university students.  
-It combines a **Flutter mobile app**, a **React web application**, and a **hardware-based GPS tracking system** to make campus transportation smarter, safer, and more reliable.
+  
+  <h1>🚍 UniRide</h1>
+  <h3>Smart Travel Companion for University Students</h3>
+  
+  <p>
+    <b>UniRide</b> is a cross-platform travel management system designed specifically for university students. <br>
+    It combines a <b>Flutter mobile app</b>, a <b>React web application</b>, and a <b>hardware-based GPS tracking system</b> to make campus transportation smarter, safer, and more reliable.
+  </p>
+
 </div>
+
 ## 📖 About UniRide
 University transportation can be unpredictable—late buses, unclear routes, and lack of real-time updates.  
 **UniRide** solves this problem by providing:
