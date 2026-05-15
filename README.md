@@ -89,17 +89,15 @@ npm start
 * University students
 * University transport administrators
 * Campus security & transport staff
-<<<<<<< HEAD
 
 ## 📷 Preview
-<img src="img/signin.png" alt="login"><br><b>Login</b>
-<img src="img/signup.png" alt="signUp"><br><b>SignUp</b>
-<img src="img/dashboard.png" alt="home"><br><b>Dashboard</b>
-<img src="img/profile.png" alt="profile"><br><b>Student Profile</b>
-<img src="img/history.png" alt="history"><br><b>Ride History</b>
-<img src="img/bookings.png" alt="bookings"><br><b>Bookings</b>
-<img src="img/schedule.png" alt="schedule"><br><b>Schedule</b>
-<img src="img/create_user.png" alt="admin"><br><b>Admin Dashboard</b>
+<img src="img/signin.png" alt="login"><br><b>Login</b><br>
+<img src="img/signup.png" alt="signUp"><br><b>SignUp</b><br>
+<img src="img/dashboard.png" alt="home"><br><b>Dashboard</b><br>
+<img src="img/profile.png" alt="profile"><br><b>Student Profile</b><br>
+<img src="img/history.png" alt="history"><br><b>Ride History</b><br>
+<img src="img/bookings.png" alt="bookings"><br><b>Bookings</b><br>
+<img src="img/schedule.png" alt="schedule"><br><b>Schedule</b><br>
+<img src="img/create_user.png" alt="admin"><br><b>Admin Dashboard</b><br>
 
-=======
->>>>>>> a89fc855ff99be42be71322bd2bdec852c2ca96d
+
