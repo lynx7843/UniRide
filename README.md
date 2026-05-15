@@ -26,7 +26,7 @@ GPS module hardware schematics and AWS configuration can be found on **UniRide A
 |---|---|
 |  UniRide Mobile | [lynx7843/UniRide_mobile](https://github.com/lynx7843/UniRide_mobile) |
 |  UniRide Client | [lynx7843/UniRide_client](https://github.com/lynx7843/UniRide_client) |
-|  UniRide AWS Config | [lynx7843/UniRide_client](https://github.com/lynx7843/UniRide_AWS_Config) |
+|  UniRide AWS Config | [lynx7843/UniRide_AWS_Config](https://github.com/lynx7843/UniRide_AWS_Config) |
 
 ## ✨ Key Features
 ### Shuttle Tracking
