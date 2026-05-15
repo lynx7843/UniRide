@@ -75,3 +75,14 @@ npm start
 * University students
 * University transport administrators
 * Campus security & transport staff
+
+## 📷 Preview
+<img src="img/signin.png" alt="login"><br><b>Login</b>
+<img src="img/signup.png" alt="signUp"><br><b>SignUp</b>
+<img src="img/dashboard.png" alt="home"><br><b>Dashboard</b>
+<img src="img/profile.png" alt="profile"><br><b>Student Profile</b>
+<img src="img/history.png" alt="history"><br><b>Ride History</b>
+<img src="img/bookings.png" alt="bookings"><br><b>Bookings</b>
+<img src="img/schedule.png" alt="schedule"><br><b>Schedule</b>
+<img src="img/create_user.png" alt="admin"><br><b>Admin Dashboard</b>
+
